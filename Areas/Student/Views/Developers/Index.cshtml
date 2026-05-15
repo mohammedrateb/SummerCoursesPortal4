@@ -1,0 +1,646 @@
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@{
+    ViewData["Title"] = "فريق المطوّرين";
+
+    var devs = new[]
+    {
+        new { Name = "Mohamed Rateb",  Role = "",   Image = "/images/team/MRH.jpeg",  Github = "https://github.com/mohammedrateb", LinkedIn = "https://www.linkedin.com/in/mohamed-rateb" },
+        new { Name = "Abozaid Taha",   Role = "",   Image = "/images/team/ATA.jpeg", Github = "https://github.com/",              LinkedIn = "https://www.linkedin.com/in/abozaied-taha-90078b2bb/" },
+        new { Name = "Ahmed Gamal", Role = "",      Image = "/images/team/AJM.jpeg", Github = "https://github.com/ahmedga09",              LinkedIn = "https://www.linkedin.com/in/ahmed-gamal-687569351/" },
+        new { Name = "Mahmoud Mohamed",   Role = "",    Image = "/images/team/MMA.jpeg", Github = "https://github.com/Ma7moud51",              LinkedIn = "https://www.linkedin.com/in/mahmoud-mohamed-971037218/" },
+        new { Name = "Mohamed Abdelmlek",   Role = "",            Image = "/images/team/MAA.jpeg", Github = "https://github.com/",              LinkedIn = "https://www.linkedin.com/in/mohamed-abdelmlek-603881352/" }
+    };
+
+    bool ImageExists(string webPath)
+    {
+        if (string.IsNullOrWhiteSpace(webPath)) return false;
+        var rel  = webPath.TrimStart('/').Replace('/', System.IO.Path.DirectorySeparatorChar);
+        var full = System.IO.Path.Combine(Env.WebRootPath, rel);
+        return System.IO.File.Exists(full);
+    }
+}
+
+<style>
+@@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=Tajawal:wght@400;700;900&display=swap');
+
+.dv {
+    --teal-950:  #020d0d;
+    --teal-900:  #041414;
+    --teal-800:  #072C2C;
+    --teal-700:  #0d3d3d;
+    --teal-600:  #1a5e5e;
+    --teal-400:  #2a8888;
+    --orange:    #FF5F03;
+    --orange-lt: #ff8540;
+    --orange-xs: #ffb07a;
+    --cream:     #FDF6EC;
+    --cream-2:   #f7ecda;
+    --cream-3:   #eedfc6;
+    --cream-dim: rgba(253,246,236,.55);
+
+    --card-bg:   #FDF6EC;
+    --text-dark: #072C2C;
+    --text-mid:  #1a5e5e;
+    --text-soft: rgba(7,44,44,.5);
+
+    --ease-spring: cubic-bezier(.34,1.56,.64,1);
+    --ease-smooth: cubic-bezier(.22,.61,.36,1);
+    --ease-expo:   cubic-bezier(.19,1,.22,1);
+}
+
+@@keyframes dv-rise     { from{opacity:0;transform:translateY(50px) scale(.9)} to{opacity:1;transform:none} }
+@@keyframes dv-fade     { from{opacity:0} to{opacity:1} }
+@@keyframes dv-float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@@keyframes dv-spin     { to{transform:rotate(360deg)}  }
+@@keyframes dv-spin-rev { to{transform:rotate(-360deg)} }
+@@keyframes dv-pan      { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+@@keyframes dv-pulse    { 0%,100%{box-shadow:0 0 0 0 rgba(255,95,3,.5)} 60%{box-shadow:0 0 0 16px rgba(255,95,3,0)} }
+@@keyframes dv-orbit    { from{transform:rotate(0deg) translateX(76px) rotate(0deg)} to{transform:rotate(360deg) translateX(76px) rotate(-360deg)} }
+@@keyframes dv-orbit-2  { from{transform:rotate(120deg) translateX(76px) rotate(-120deg)} to{transform:rotate(480deg) translateX(76px) rotate(-480deg)} }
+@@keyframes dv-orbit-3  { from{transform:rotate(240deg) translateX(76px) rotate(-240deg)} to{transform:rotate(600deg) translateX(76px) rotate(-600deg)} }
+@@keyframes dv-scanline { 0%{top:-4%} 100%{top:104%} }
+@@keyframes dv-bar-grow { from{transform:scaleX(0)} to{transform:scaleX(1)} }
+@@keyframes dv-pop      { 0%{transform:translateX(-50%) scale(0) translateY(8px)} 70%{transform:translateX(-50%) scale(1.08) translateY(-6px)} 100%{transform:translateX(-50%) scale(1) translateY(-4px)} }
+@@keyframes dv-grain    { 0%,100%{transform:translate(0,0)}  20%{transform:translate(-2%,-3%)} 40%{transform:translate(3%,-1%)} 60%{transform:translate(-1%,2%)} 80%{transform:translate(2%,3%)} }
+@@keyframes dv-dash     { to{stroke-dashoffset:0} }
+@@keyframes dv-number   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+@@keyframes dv-bg-shift { 0%{background-position:0% 0%} 100%{background-position:100% 100%} }
+
+.dv-page {
+    position:relative; isolation:isolate; overflow:hidden;
+    min-height:calc(100vh - 80px); padding:5rem 1rem 7rem;
+    font-family:'DM Sans','Tajawal',sans-serif;
+    color:var(--cream);
+    background:
+        radial-gradient(80% 60% at 92%  4%, rgba(255,95,3,.11), transparent 52%),
+        radial-gradient(60% 70% at  4% 96%, rgba(26,94,94,.42),  transparent 52%),
+        linear-gradient(175deg, #020a0a 0%, #072C2C 52%, #030f0f 100%);
+}
+
+.dv-page::before {
+    content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+    background-image:
+        linear-gradient(rgba(253,246,236,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(253,246,236,.025) 1px, transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(ellipse 80% 70% at 50% 45%, #000 20%, transparent 70%);
+    -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 45%, #000 20%, transparent 70%);
+}
+
+.dv-spotlight {
+    position:absolute; pointer-events:none; z-index:0;
+    width:600px; height:600px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,95,3,.07) 0%, transparent 65%);
+    transform:translate(-50%,-50%);
+    transition:left .12s ease, top .12s ease;
+}
+
+.dv-noise {
+    position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.025;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:180px;
+    animation:dv-grain 8s steps(1) infinite;
+}
+
+.dv-glow-1 {
+    position:absolute; top:-120px; right:-100px;
+    width:520px; height:520px; border-radius:50%; pointer-events:none; z-index:0;
+    background:radial-gradient(circle, rgba(255,95,3,.12) 0%, transparent 65%);
+}
+.dv-glow-2 {
+    position:absolute; bottom:-100px; left:-80px;
+    width:420px; height:420px; border-radius:50%; pointer-events:none; z-index:0;
+    background:radial-gradient(circle, rgba(26,94,94,.28) 0%, transparent 65%);
+}
+
+.dv-scanline {
+    position:absolute; left:0; right:0; top:-4%; height:4%;
+    background:linear-gradient(to bottom, transparent, rgba(253,246,236,.025), transparent);
+    pointer-events:none; z-index:0;
+    animation:dv-scanline 8s linear infinite;
+}
+
+.dv-hero {
+    position:relative; z-index:1;
+    max-width:1100px; margin:0 auto 5rem; text-align:center;
+}
+
+.dv-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:.45rem 1.1rem;
+    background:rgba(255,95,3,.1); border:1px solid rgba(255,95,3,.28);
+    border-radius:50px; font-size:.78rem; font-weight:600; letter-spacing:.6px;
+    color:var(--orange-xs); backdrop-filter:blur(12px);
+    margin-bottom:1.5rem; text-transform:uppercase;
+    animation:dv-fade .9s var(--ease-smooth) both;
+}
+.dv-badge-dot {
+    width:7px; height:7px; border-radius:50%;
+    background:var(--orange); animation:dv-pulse 2s infinite;
+}
+
+.dv-title {
+    font-family:'Playfair Display','Tajawal',serif;
+    font-size:clamp(2.6rem,6vw,4.8rem); font-weight:900; line-height:1.05;
+    margin:0 0 1.2rem;
+    background:linear-gradient(120deg, var(--orange) 0%, var(--orange-lt) 35%, var(--cream) 65%, var(--orange-xs) 100%);
+    background-size:300% auto;
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:dv-pan 8s ease-in-out infinite;
+}
+
+.dv-sub {
+    font-size:clamp(.95rem,1.5vw,1.1rem);
+    color:var(--cream-dim); max-width:680px; margin:0 auto; line-height:1.95;
+    font-weight:300;
+}
+
+.dv-sep {
+    display:flex; align-items:center; justify-content:center;
+    gap:12px; margin:2rem auto 0; width:fit-content;
+}
+.dv-sep-line { width:70px; height:1px; background:linear-gradient(90deg,transparent,var(--orange),transparent); }
+.dv-sep-diamond {
+    width:10px; height:10px; background:var(--orange);
+    transform:rotate(45deg); box-shadow:0 0 12px var(--orange);
+    animation:dv-pulse 2.4s infinite;
+}
+
+.dv-stats {
+    display:flex; justify-content:center; gap:3rem;
+    margin-top:2.8rem; animation:dv-fade 1s .6s both;
+}
+.dv-stat { text-align:center; }
+.dv-stat-num {
+    font-family:'Playfair Display',serif; font-size:2rem; font-weight:900;
+    background:linear-gradient(135deg,var(--orange),var(--orange-lt));
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; line-height:1;
+}
+.dv-stat-label { font-size:.72rem; color:var(--cream-dim); letter-spacing:.8px; text-transform:uppercase; margin-top:.3rem; }
+
+.dv-grid {
+    position:relative; z-index:1;
+    max-width:1300px; margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:2.8rem 2rem; justify-items:center;
+}
+@@media (min-width:1100px) { .dv-grid { grid-template-columns:repeat(5,1fr); } }
+
+.dv-card {
+    position:relative; width:100%; max-width:235px;
+    text-align:center; padding:0 0 1.6rem;
+    background:var(--card-bg);
+    border:1px solid var(--cream-3);
+    border-radius:24px; overflow:hidden;
+    animation:dv-rise .8s var(--ease-smooth) both;
+    transition:transform .5s var(--ease-spring), box-shadow .4s ease, border-color .3s ease;
+    cursor:default;
+    will-change:transform;
+}
+
+.dv-card:nth-child(1){animation-delay:.05s}
+.dv-card:nth-child(2){animation-delay:.15s}
+.dv-card:nth-child(3){animation-delay:.25s}
+.dv-card:nth-child(4){animation-delay:.35s}
+.dv-card:nth-child(5){animation-delay:.45s}
+
+.dv-card::after {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);
+    transform:translateX(-120%); transition:transform 0s; z-index:4;
+}
+.dv-card:hover::after { animation:dv-shine .75s ease forwards; }
+@@keyframes dv-shine { 0%{transform:translateX(-120%)} 100%{transform:translateX(130%)} }
+
+.dv-card:hover {
+    transform:translateY(-14px) rotateX(2deg);
+    box-shadow:
+        0 28px 60px -14px rgba(7,44,44,.32),
+        0  0   0    2px  rgba(255,95,3,.22),
+        0 -2px 20px -8px rgba(255,95,3,.12) inset;
+    border-color:rgba(255,95,3,.4);
+}
+
+.dv-card-top {
+    height:6px;
+    background:linear-gradient(90deg,var(--orange),var(--orange-lt),var(--teal-600));
+    transform-origin:left; transform:scaleX(0);
+    transition:transform .5s var(--ease-expo);
+}
+.dv-card:hover .dv-card-top { transform:scaleX(1); }
+
+.dv-card-header {
+    padding:1.8rem 1rem 0;
+    background:linear-gradient(180deg,var(--cream-2) 0%,var(--card-bg) 100%);
+}
+
+.dv-avatar-wrap {
+    position:relative; width:150px; height:150px;
+    margin:0 auto 1.3rem;
+}
+
+.dv-orbit-dot {
+    position:absolute; top:50%; left:50%;
+    width:9px; height:9px; border-radius:50%;
+    margin:-4.5px 0 0 -4.5px;
+    background:var(--orange);
+    box-shadow:0 0 8px var(--orange);
+    animation:dv-orbit 5s linear infinite;
+    opacity:0; transition:opacity .3s ease;
+    z-index:3;
+}
+.dv-orbit-dot:nth-child(2) { background:var(--teal-600); box-shadow:0 0 8px var(--teal-600); animation-name:dv-orbit-2; animation-duration:5s; }
+.dv-orbit-dot:nth-child(3) { background:var(--cream-3);  box-shadow:0 0 6px var(--cream-3);  animation-name:dv-orbit-3; animation-duration:7s; }
+.dv-card:hover .dv-orbit-dot { opacity:1; }
+
+.dv-ring-svg {
+    position:absolute; inset:-10px; width:calc(100% + 20px); height:calc(100% + 20px);
+    z-index:2; pointer-events:none;
+}
+.dv-ring-track { fill:none; stroke:var(--cream-3); stroke-width:1.5; }
+.dv-ring-progress {
+    fill:none; stroke:url(#dvRingGrad); stroke-width:2.5;
+    stroke-linecap:round;
+    stroke-dasharray:440; stroke-dashoffset:440;
+    transition:stroke-dashoffset 1s var(--ease-expo);
+}
+.dv-card:hover .dv-ring-progress { stroke-dashoffset:80; }
+
+.dv-avatar-ring {
+    position:absolute; inset:-7px; border-radius:50%;
+    background:conic-gradient(from 0deg,transparent,var(--orange),var(--teal-600),var(--orange-lt),transparent);
+    animation:dv-spin 9s linear infinite; z-index:1; opacity:.8;
+}
+.dv-avatar-ring-2 {
+    position:absolute; inset:-2px; border-radius:50%;
+    background:conic-gradient(from 180deg,transparent,rgba(253,246,236,.4),transparent,rgba(255,95,3,.25),transparent);
+    animation:dv-spin-rev 14s linear infinite; z-index:1; opacity:.6;
+}
+.dv-card:hover .dv-avatar-ring   { animation-duration:3.5s; }
+.dv-card:hover .dv-avatar-ring-2 { animation-duration:6s; }
+
+.dv-avatar {
+    position:relative; z-index:2;
+    width:150px; height:150px; border-radius:50%;
+    overflow:hidden; display:flex; align-items:center; justify-content:center;
+    font-family:'Playfair Display',serif; font-size:2.6rem; font-weight:900;
+    color:var(--cream);
+    background:linear-gradient(135deg,var(--teal-800),var(--teal-600));
+    border:5px solid var(--card-bg);
+    box-shadow:0 12px 32px -8px rgba(7,44,44,.45);
+    animation:dv-float 5s ease-in-out infinite;
+    transition:transform .45s var(--ease-spring), box-shadow .3s ease;
+}
+.dv-card:hover .dv-avatar {
+    transform:scale(1.06);
+    animation-play-state:paused;
+    box-shadow:0 18px 40px -10px rgba(7,44,44,.5),0 0 0 2px rgba(255,95,3,.3);
+}
+.dv-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+
+.dv-ph-1{background:linear-gradient(135deg,#c43f00,var(--orange))}
+.dv-ph-2{background:linear-gradient(135deg,var(--teal-800),var(--teal-600))}
+.dv-ph-3{background:linear-gradient(135deg,#6b2d00,#d4560a)}
+.dv-ph-4{background:linear-gradient(135deg,var(--teal-950),var(--teal-700))}
+.dv-ph-5{background:linear-gradient(135deg,#4d2600,var(--orange-lt))}
+
+.dv-ribbon {
+    position:absolute; top:20px; right:-28px;
+    padding:4px 32px; font-size:.62rem; font-weight:700;
+    color:#fff; background:var(--orange); letter-spacing:.8px; text-transform:uppercase;
+    transform:rotate(35deg); z-index:5; box-shadow:0 4px 12px -4px rgba(255,95,3,.6);
+    opacity:0; transition:opacity .3s ease;
+}
+.dv-card:hover .dv-ribbon { opacity:1; }
+
+.dv-card-body { padding:0 1.2rem; }
+
+.dv-name {
+    font-family:'Playfair Display','Tajawal',serif;
+    font-size:1.08rem; font-weight:700;
+    color:var(--text-dark); margin:0 0 .2rem; letter-spacing:.1px;
+    cursor:pointer; display:inline-block;
+    transition:color .3s ease;
+}
+.dv-card:hover .dv-name { color:var(--orange); }
+
+.dv-role {
+    font-size:.75rem; font-weight:500; letter-spacing:.45px; text-transform:uppercase;
+    color:var(--text-mid); margin:0 0 1.1rem;
+}
+
+.dv-divider {
+    height:1px; margin:0 0 1.1rem;
+    background:linear-gradient(90deg,transparent,var(--cream-3),transparent);
+}
+
+.dv-social { display:flex; justify-content:center; gap:10px; }
+
+.dv-social a {
+    position:relative; width:38px; height:38px;
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:50%; overflow:hidden;
+    background:rgba(7,44,44,.07); color:var(--text-dark);
+    border:1.5px solid rgba(7,44,44,.14);
+    text-decoration:none; font-size:.95rem;
+    transition:transform .35s var(--ease-spring), background .3s, border-color .3s, color .3s, box-shadow .3s;
+}
+.dv-social a::before {
+    content:""; position:absolute; inset:0; border-radius:50%;
+    background:var(--orange); transform:scale(0);
+    transition:transform .4s var(--ease-spring); z-index:0;
+}
+.dv-social a i { position:relative; z-index:1; }
+.dv-social .dv-gh:hover { color:#fff; border-color:#24292e; transform:translateY(-5px) scale(1.15); box-shadow:0 10px 20px -8px rgba(0,0,0,.5); }
+.dv-social .dv-gh:hover::before { background:#24292e; transform:scale(1); }
+.dv-social .dv-li:hover { color:#fff; border-color:#0A66C2; transform:translateY(-5px) scale(1.15); box-shadow:0 10px 20px -8px rgba(10,102,194,.5); }
+.dv-social .dv-li:hover::before { background:#0A66C2; transform:scale(1); }
+
+.dv-tooltip {
+    position:absolute; bottom:calc(100% + 10px); left:50%;
+    transform:translateX(-50%) scale(0) translateY(8px);
+    white-space:nowrap; padding:4px 10px; border-radius:8px;
+    font-size:.68rem; font-weight:600; color:#fff;
+    background:var(--teal-800); border:1px solid var(--teal-600);
+    pointer-events:none; z-index:10;
+    transition:transform .25s var(--ease-spring), opacity .25s ease;
+    opacity:0;
+}
+.dv-social a:hover .dv-tooltip {
+    transform:translateX(-50%) scale(1) translateY(0);
+    opacity:1;
+}
+
+.dv-cta {
+    position:relative; z-index:1;
+    max-width:860px; margin:5.5rem auto 0; padding:3rem 2rem;
+    text-align:center; overflow:hidden;
+    background:var(--card-bg);
+    border:1px solid var(--cream-3);
+    border-radius:26px;
+    box-shadow:0 24px 56px -14px rgba(7,44,44,.28);
+}
+.dv-cta-bar {
+    position:absolute; top:0; left:0; right:0; height:5px;
+    background:linear-gradient(90deg,var(--orange),var(--orange-lt),var(--teal-600));
+    transform-origin:left; transform:scaleX(0);
+    animation:dv-bar-grow 1.2s 1s var(--ease-expo) forwards;
+}
+.dv-cta h2 {
+    font-family:'Playfair Display','Tajawal',serif;
+    font-size:clamp(1.5rem,2.5vw,2.1rem); font-weight:900;
+    color:var(--text-dark); margin:0 0 .7rem;
+}
+.dv-cta p { color:var(--text-soft); margin:0 0 1.6rem; font-size:1rem; line-height:1.8; }
+.dv-cta-btn {
+    display:inline-flex; align-items:center; gap:10px;
+    padding:.9rem 2.2rem;
+    background:linear-gradient(135deg,var(--orange),var(--orange-lt));
+    color:#fff; text-decoration:none; font-weight:600;
+    border-radius:50px;
+    box-shadow:0 12px 30px -10px rgba(255,95,3,.55);
+    transition:transform .35s var(--ease-spring), box-shadow .3s ease;
+}
+.dv-cta-btn:hover { transform:translateY(-4px); color:#fff; box-shadow:0 20px 40px -10px rgba(255,95,3,.7); }
+
+.dv-cta-dots {
+    position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+    display:flex; gap:6px;
+}
+.dv-cta-dots span {
+    width:6px; height:6px; border-radius:50%; background:var(--cream-3);
+}
+.dv-cta-dots span:nth-child(2){ background:var(--orange); }
+
+@@media (prefers-reduced-motion:reduce) {
+    .dv *,.dv *::before,.dv *::after { animation:none!important; transition:none!important; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+    <defs>
+        <linearGradient id="dvRingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#FF5F03"/>
+            <stop offset="50%"  stop-color="#ff8540"/>
+            <stop offset="100%" stop-color="#1a5e5e"/>
+        </linearGradient>
+    </defs>
+</svg>
+
+<div class="dv">
+<div class="dv-page" id="dvPage">
+    <div class="dv-spotlight" id="dvSpotlight"></div>
+    <div class="dv-noise"></div>
+    <div class="dv-glow-1"></div>
+    <div class="dv-glow-2"></div>
+    <div class="dv-scanline"></div>
+
+    <div class="dv-hero">
+        <div class="dv-badge">
+            <span class="dv-badge-dot"></span>
+            Class of 2026 — كلية التربية
+        </div>
+        <h1 class="dv-title">فريق المطوّرين</h1>
+        <br />
+        <p class="dv-sub"> تم تطوير هذه المنصة بواسطة فريق كلية التربية — شعبة الحاسب الآلي ، جامعة أسيوط — دفعة 2026.</p>
+    </div>
+
+    <div class="dv-grid">
+        @for (int i = 0; i < devs.Length; i++)
+        {
+            var d        = devs[i];
+            var phClass  = $"dv-ph-{i + 1}";
+            var initials = string.Concat(
+                               (d.Name ?? "?")
+                               .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                               .Take(2)
+                               .Select(w => w.FirstOrDefault()))
+                           .ToUpperInvariant();
+            var hasImage = ImageExists(d.Image);
+
+            <div class="dv-card" data-tilt role="article" aria-label="@d.Name">
+                <div class="dv-card-top"></div>
+                <span class="dv-ribbon" aria-hidden="true">Developer</span>
+
+                <div class="dv-card-header">
+                    <div class="dv-avatar-wrap">
+                        <span class="dv-orbit-dot" aria-hidden="true"></span>
+                        <span class="dv-orbit-dot" aria-hidden="true"></span>
+                        <span class="dv-orbit-dot" aria-hidden="true"></span>
+
+                        <svg class="dv-ring-svg" viewBox="0 0 170 170" aria-hidden="true">
+                            <circle class="dv-ring-track"    cx="85" cy="85" r="70"/>
+                            <circle class="dv-ring-progress" cx="85" cy="85" r="70" transform="rotate(-90 85 85)"/>
+                        </svg>
+
+                        <span class="dv-avatar-ring"   aria-hidden="true"></span>
+                        <span class="dv-avatar-ring-2" aria-hidden="true"></span>
+
+                        <div class="dv-avatar @(hasImage ? "" : phClass)">
+                            @if (hasImage)
+                            {
+                                <img src="@d.Image" asp-append-version="true" alt="صورة @d.Name" loading="lazy"/>
+                            }
+                            else
+                            {
+                                <span aria-hidden="true">@initials</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dv-card-body">
+                    <h3 class="dv-name" data-scramble="@d.Name">@d.Name</h3>
+                    <p  class="dv-role">@d.Role</p>
+                    <div class="dv-divider"></div>
+                    <div class="dv-social">
+                        <a class="dv-gh" href="@d.Github" target="_blank" rel="noopener noreferrer" aria-label="GitHub — @d.Name">
+                            <i class="fab fa-github" aria-hidden="true"></i>
+                            <span class="dv-tooltip">GitHub</span>
+                        </a>
+                        <a class="dv-li" href="@d.LinkedIn" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn — @d.Name">
+                            <i class="fab fa-linkedin-in" aria-hidden="true"></i>
+                            <span class="dv-tooltip">LinkedIn</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="dv-cta">
+        <div class="dv-cta-bar"></div>
+        <h2>شكراً لزيارتك</h2>
+        <p>نسعى دائماً نحو التطوير والإبداع المستمر.</p>
+        <a class="dv-cta-btn" asp-area="Student" asp-controller="Home" asp-action="Index">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            العودة للرئيسية
+        </a>
+        <div class="dv-cta-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var page = document.getElementById("dvPage");
+    var spot = document.getElementById("dvSpotlight");
+
+    if (page && spot) {
+        page.addEventListener("mousemove", function (e) {
+            var r = page.getBoundingClientRect();
+            spot.style.left = (e.clientX - r.left)  + "px";
+            spot.style.top  = (e.clientY - r.top)   + "px";
+        });
+    }
+
+    document.querySelectorAll("[data-tilt]").forEach(function (card) {
+        var MAX = 12;
+
+        card.addEventListener("mousemove", function (e) {
+            var r  = card.getBoundingClientRect();
+            var cx = r.left + r.width  / 2;
+            var cy = r.top  + r.height / 2;
+            var rx = ((e.clientY - cy) / (r.height / 2)) * -MAX;
+            var ry = ((e.clientX - cx) / (r.width  / 2)) *  MAX;
+            card.style.transform = "translateY(-14px) rotateX(" + rx + "deg) rotateY(" + ry + "deg)";
+            card.style.transition = "transform .1s ease";
+        });
+
+        card.addEventListener("mouseleave", function () {
+            card.style.transition = "transform .5s cubic-bezier(.34,1.56,.64,1)";
+            card.style.transform  = "";
+        });
+    });
+
+    var CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    document.querySelectorAll("[data-scramble]").forEach(function (el) {
+        var original = el.dataset.scramble;
+        var timer    = null;
+        var frame    = 0;
+
+        function scramble() {
+            frame++;
+            if (frame > 14) {
+                el.textContent = original;
+                clearInterval(timer);
+                return;
+            }
+            el.textContent = original.split("").map(function (ch, i) {
+                if (ch === " ") return " ";
+                return i < frame
+                    ? original[i]
+                    : CHARS[Math.floor(Math.random() * CHARS.length)];
+            }).join("");
+        }
+
+        el.addEventListener("mouseenter", function () {
+            frame = 0;
+            clearInterval(timer);
+            timer = setInterval(scramble, 45);
+        });
+
+        el.addEventListener("mouseleave", function () {
+            clearInterval(timer);
+            el.textContent = original;
+        });
+    });
+
+    var counters = document.querySelectorAll("[data-target]");
+    var started  = false;
+
+    function animateCounters() {
+        if (started) return;
+        started = true;
+        counters.forEach(function (el) {
+            var target   = parseInt(el.dataset.target, 10);
+            var duration = target > 100 ? 1800 : 900;
+            var start    = null;
+
+            function step(ts) {
+                if (!start) start = ts;
+                var progress = Math.min((ts - start) / duration, 1);
+                var eased    = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.floor(eased * target);
+                if (progress < 1) requestAnimationFrame(step);
+                else el.textContent = target;
+            }
+            requestAnimationFrame(step);
+        });
+    }
+
+    if ("IntersectionObserver" in window) {
+        var obs = new IntersectionObserver(function (entries) {
+            if (entries[0].isIntersecting) animateCounters();
+        }, { threshold: .3 });
+        var hero = document.querySelector(".dv-hero");
+        if (hero) obs.observe(hero);
+    } else {
+        animateCounters();
+    }
+
+    document.querySelectorAll(".dv-social a").forEach(function (btn) {
+        btn.addEventListener("mousemove", function (e) {
+            var r   = btn.getBoundingClientRect();
+            var dx  = (e.clientX - (r.left + r.width  / 2)) * .25;
+            var dy  = (e.clientY - (r.top  + r.height / 2)) * .25;
+            btn.style.transform = "translate(" + dx + "px," + dy + "px) translateY(-5px) scale(1.15)";
+            btn.style.transition = "transform .1s ease";
+        });
+
+        btn.addEventListener("mouseleave", function () {
+            btn.style.transition = "transform .4s cubic-bezier(.34,1.56,.64,1)";
+            btn.style.transform  = "";
+        });
+    });
+
+}());
+</script>

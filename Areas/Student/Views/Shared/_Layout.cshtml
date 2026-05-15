@@ -1,0 +1,849 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      ملاحظات مهمة:
+      • لا يوجد أي تعديل على الـ Backend.
+      • تم الإبقاء على نفس بنية الـ Razor و asp-* helpers والـ CSS classes الأصلية.
+      • التحسينات كلها على طبقة العرض (CSS + Vanilla JS باستخدام Native APIs فقط).
+      • Navbar: الأقسام تظهر دائماً على الكمبيوتر، وعلى الموبايل عند الضغط على زر الشرائط.
+      • Footer: محسّن بنفس لغة التصميم (زجاجي، تدرّجات، حركات لطيفة).
+      • Skip-to-content + Back-to-top + Sticky scroll shadow.
+      • الـ Script لا يحقن HTML ولا يستخدم eval → آمن من XSS.
+      • يحترم prefers-reduced-motion للمستخدمين.
+    ═══════════════════════════════════════════════════════════════
+*@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Summer Courses Portal </title>
+
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="icon" type="image/x-icon" sizes="32x32" href="~/favicon.ico" asp-append-version="true" />
+    <link rel="apple-touch-icon" href="~/apple-touch-icon.png" asp-append-version="true" />
+
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/enterprise.css" asp-append-version="true" />
+
+    <!-- ═══════════════════════════════════════
+         ENHANCED LAYOUT VISUAL LAYER (CSS)
+    ═══════════════════════════════════════ -->
+    <style>
+        /* ========== Skip link (accessibility) ========== */
+        .lyt-skip{
+            position: absolute; right: 12px; top: -60px;
+            background: #072C2C; color: #fff; padding: 10px 16px;
+            border-radius: 10px; font-weight: 700; text-decoration: none;
+            z-index: 2000; transition: top .3s ease;
+        }
+        .lyt-skip:focus{ top: 12px; outline: 2px solid #FF5F03; outline-offset: 2px; }
+
+        /* ========== NAVBAR — Glass + Underline + Mobile Drawer ========== */
+        .navbar-enterprise{
+            --nv-ease: cubic-bezier(.22,.61,.36,1);
+            --nv-bounce: cubic-bezier(.34,1.56,.64,1);
+            --nv-primary: #072C2C;
+            --nv-primary-2: #1e6b6b;
+            --nv-accent: #FF5F03;
+            --nv-glass-bg: rgba(255,255,255,.72);
+            --nv-glass-border: rgba(255,255,255,.65);
+            --nv-shadow: 0 10px 30px -16px rgba(7,44,44,.25);
+            --nv-grad-primary: linear-gradient(135deg,#072C2C 0%,#1e6b6b 100%);
+            --nv-grad-accent:  linear-gradient(135deg,#FF5F03 0%,#ffb060 100%);
+            --nv-grad-mix:     linear-gradient(120deg,#072C2C,#1e6b6b 40%,#FF5F03);
+
+            position: sticky; top: 0; z-index: 1030;
+            background: var(--nv-glass-bg);
+            backdrop-filter: blur(14px) saturate(150%);
+            -webkit-backdrop-filter: blur(14px) saturate(150%);
+            border-bottom: 1px solid var(--nv-glass-border);
+            box-shadow: var(--nv-shadow);
+            transition: box-shadow .35s ease, background .35s ease;
+        }
+        .navbar-enterprise.nv-scrolled{
+            background: rgba(255,255,255,.92);
+            box-shadow: 0 14px 40px -18px rgba(7,44,44,.35);
+        }
+        .navbar-enterprise::after{
+            content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px;
+            background: var(--nv-grad-mix); opacity:.55;
+        }
+
+        .navbar-enterprise .nav-container{
+            display:flex; align-items:center; justify-content:space-between;
+            gap: 14px; padding: 12px 22px;
+            max-width: 1320px; margin:0 auto; position: relative;
+        }
+
+        /* Brand */
+        .navbar-enterprise .navbar-brand-logo{
+            display:flex; align-items:center; gap:12px;
+            text-decoration:none; color: var(--nv-primary);
+            transition: transform .35s var(--nv-ease);
+        }
+        .navbar-enterprise .navbar-brand-logo:hover{ transform: translateY(-2px); }
+        .navbar-enterprise .brand-icon{
+            width:46px; height:46px; border-radius:14px;
+            display:inline-flex; align-items:center; justify-content:center;
+            color:#fff; font-size:1.15rem;
+            background: var(--nv-grad-primary);
+            box-shadow: 0 8px 22px -10px rgba(7,44,44,.55);
+            position: relative; overflow: hidden;
+            transition: transform .5s var(--nv-bounce), box-shadow .35s ease;
+        }
+        .navbar-enterprise .brand-icon::after{
+            content:""; position:absolute; inset:0;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+            transform: translateX(-100%); transition: transform .8s ease;
+        }
+        .navbar-enterprise .navbar-brand-logo:hover .brand-icon{
+            transform: rotate(-8deg) scale(1.06);
+            box-shadow: 0 14px 30px -10px rgba(7,44,44,.6);
+        }
+        .navbar-enterprise .navbar-brand-logo:hover .brand-icon::after{ transform: translateX(100%); }
+        .navbar-enterprise .brand-text-main{
+            font-weight: 800; font-size: 1.05rem; line-height:1.1;
+            background-image: var(--nv-grad-mix); background-size: 220% auto;
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; letter-spacing:.2px;
+        }
+        .navbar-enterprise .brand-text-sub{
+            font-size:.78rem; color:#475569; font-weight:600; margin-top:2px;
+        }
+
+        /* Mobile toggle */
+        .navbar-enterprise .mobile-toggle{
+            display: none;
+            width:44px; height:44px; border-radius:12px;
+            align-items:center; justify-content:center;
+            border: 1px solid rgba(7,44,44,.15);
+            background: #fff; color: var(--nv-primary);
+            font-size: 1.05rem; cursor:pointer;
+            transition: transform .3s var(--nv-ease), box-shadow .3s ease, background .3s ease, color .3s ease;
+        }
+        .navbar-enterprise .mobile-toggle:hover{
+            background: var(--nv-primary); color:#fff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px -10px rgba(7,44,44,.5);
+        }
+        .navbar-enterprise .mobile-toggle[aria-expanded="true"]{
+            background: var(--nv-primary); color:#fff;
+        }
+        .navbar-enterprise .mobile-toggle i{ transition: transform .35s var(--nv-ease); }
+        .navbar-enterprise .mobile-toggle[aria-expanded="true"] i{ transform: rotate(90deg); }
+
+        /* Desktop menu (always visible on desktop) */
+        .navbar-enterprise .navbar-collapse{ display:flex; align-items:center; }
+        .navbar-enterprise .nav-enterprise{
+            list-style:none; padding:0; margin:0;
+            display:flex; align-items:center; gap: 6px;
+        }
+        .navbar-enterprise .nav-enterprise-item{ position: relative; }
+        .navbar-enterprise .nav-enterprise-link{
+            position: relative;
+            display:inline-flex; align-items:center; gap:8px;
+            padding: 10px 16px; font-weight: 700; font-size:.95rem;
+            color: #1f2937; text-decoration:none; border-radius: 12px;
+            transition: color .3s ease, background .3s ease, transform .3s var(--nv-ease);
+            overflow: hidden; z-index: 1;
+        }
+        .navbar-enterprise .nav-enterprise-link .nav-icon{
+            font-size:.95rem; color: var(--nv-primary-2);
+            transition: transform .4s var(--nv-bounce), color .3s ease;
+        }
+        .navbar-enterprise .nav-enterprise-link::after{
+            content:""; position:absolute; left:14px; right:14px; bottom:6px;
+            height:2px; border-radius:2px;
+            background: var(--nv-grad-accent);
+            transform: scaleX(0); transform-origin: right;
+            transition: transform .45s var(--nv-ease);
+        }
+        .navbar-enterprise .nav-enterprise-link::before{
+            content:""; position:absolute; inset:0; border-radius:inherit;
+            background: linear-gradient(135deg, rgba(7,44,44,.06), rgba(255,95,3,.06));
+            opacity:0; transition: opacity .35s ease; z-index:-1;
+        }
+        .navbar-enterprise .nav-enterprise-link:hover{ color: var(--nv-primary); transform: translateY(-2px); }
+        .navbar-enterprise .nav-enterprise-link:hover::after{ transform: scaleX(1); transform-origin: left; }
+        .navbar-enterprise .nav-enterprise-link:hover::before{ opacity:1; }
+        .navbar-enterprise .nav-enterprise-link:hover .nav-icon{
+            transform: rotate(-8deg) scale(1.12); color: var(--nv-accent);
+        }
+        .navbar-enterprise .nav-enterprise-link:focus-visible{
+            outline: 2px solid var(--nv-accent); outline-offset: 3px;
+        }
+        .navbar-enterprise .nav-enterprise-link.active,
+        .navbar-enterprise .nav-enterprise-link[aria-current="page"]{ color: var(--nv-primary); }
+        .navbar-enterprise .nav-enterprise-link.active::after,
+        .navbar-enterprise .nav-enterprise-link[aria-current="page"]::after{
+            transform: scaleX(1); transform-origin: left;
+        }
+        .navbar-enterprise .nav-enterprise-link.active::before,
+        .navbar-enterprise .nav-enterprise-link[aria-current="page"]::before{ opacity:1; }
+
+        /* Mobile drawer */
+        @@media (max-width: 991.98px){
+            .navbar-enterprise .mobile-toggle{ display:inline-flex; }
+            .navbar-enterprise .navbar-collapse{
+                position: absolute; left: 14px; right: 14px; top: calc(100% + 10px);
+                display: block;
+                background: rgba(255,255,255,.96);
+                backdrop-filter: blur(16px) saturate(150%);
+                -webkit-backdrop-filter: blur(16px) saturate(150%);
+                border: 1px solid var(--nv-glass-border);
+                border-radius: 18px;
+                box-shadow: 0 24px 50px -18px rgba(7,44,44,.28);
+                padding: 10px; overflow: hidden;
+                max-height: 0; opacity: 0; transform: translateY(-8px);
+                transition: max-height .45s var(--nv-ease), opacity .35s ease, transform .35s ease, padding .3s ease;
+                pointer-events: none;
+            }
+            .navbar-enterprise .navbar-collapse.show,
+            .navbar-enterprise .navbar-collapse.nv-open{
+                max-height: 70vh; opacity: 1; transform: translateY(0); pointer-events: auto;
+            }
+            .navbar-enterprise .navbar-collapse.collapsing{
+                display:block; opacity:1; transform: translateY(0); pointer-events:auto;
+            }
+            .navbar-enterprise .nav-enterprise{ flex-direction: column; align-items: stretch; gap: 4px; }
+            .navbar-enterprise .nav-enterprise-link{
+                padding: 14px 16px; border-radius: 12px;
+                justify-content: flex-start; border: 1px solid transparent;
+            }
+            .navbar-enterprise .nav-enterprise-link::after{
+                left: 12px; right: auto; bottom: 50%;
+                width: 3px; height: 0; border-radius: 3px;
+                background: var(--nv-grad-accent);
+                transform: none; transition: height .35s var(--nv-ease), top .35s ease, bottom .35s ease;
+            }
+            .navbar-enterprise .nav-enterprise-link:hover::after,
+            .navbar-enterprise .nav-enterprise-link.active::after,
+            .navbar-enterprise .nav-enterprise-link[aria-current="page"]::after{
+                height: 60%; bottom: 20%;
+            }
+            .navbar-enterprise .nav-enterprise-link:hover{
+                border-color: rgba(7,44,44,.08); transform: translateX(-3px);
+            }
+            .navbar-enterprise .navbar-collapse.show .nav-enterprise-item,
+            .navbar-enterprise .navbar-collapse.nv-open .nav-enterprise-item{
+                animation: nv-slideIn .45s var(--nv-ease) both;
+            }
+            .navbar-enterprise .navbar-collapse .nav-enterprise-item:nth-child(1){ animation-delay:.05s; }
+            .navbar-enterprise .navbar-collapse .nav-enterprise-item:nth-child(2){ animation-delay:.12s; }
+            .navbar-enterprise .navbar-collapse .nav-enterprise-item:nth-child(3){ animation-delay:.19s; }
+            .navbar-enterprise .navbar-collapse .nav-enterprise-item:nth-child(4){ animation-delay:.26s; }
+            .navbar-enterprise .navbar-collapse .nav-enterprise-item:nth-child(5){ animation-delay:.33s; }
+        }
+
+        @@keyframes nv-slideIn {
+            from { opacity:0; transform: translateY(-8px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+
+        /* ========== FOOTER — Premium dark with aurora ========== */
+        .footer-enterprise{
+            --ft-primary: #072C2C;
+            --ft-primary-2: #1e6b6b;
+            --ft-accent: #FF5F03;
+            --ft-grad-primary: linear-gradient(135deg,#072C2C 0%,#1e6b6b 100%);
+            --ft-grad-accent:  linear-gradient(135deg,#FF5F03 0%,#ffb060 100%);
+            --ft-grad-mix:     linear-gradient(120deg,#072C2C,#1e6b6b 40%,#FF5F03);
+            --ft-ease: cubic-bezier(.22,.61,.36,1);
+
+            position: relative; overflow: hidden; isolation: isolate;
+            color: #e2e8f0;
+            background:
+              radial-gradient(60% 60% at 80% 0%, rgba(255,95,3,.16), transparent 60%),
+              radial-gradient(60% 60% at 10% 100%, rgba(30,107,107,.22), transparent 60%),
+              linear-gradient(160deg, #051d1d 0%, #072C2C 60%, #0a3a3a 100%);
+            margin-top: 60px;
+        }
+        .footer-enterprise::before{
+            content:""; position:absolute; inset:0; pointer-events:none; z-index:-1;
+            background-image:
+              linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
+        }
+        /* Top wave */
+        .footer-enterprise::after{
+            content:""; position:absolute; left:0; right:0; top:-1px; height:60px;
+            background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 60' preserveAspectRatio='none'><path fill='%23072C2C' d='M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,0 L0,0 Z'/></svg>") no-repeat top center / cover;
+            transform: translateY(-100%);
+            pointer-events: none;
+        }
+
+        .footer-enterprise .footer-main{ padding: 60px 22px 28px; }
+        .footer-enterprise .footer-container{ max-width: 1320px; margin: 0 auto; }
+        .footer-enterprise .footer-grid{
+            display: grid; gap: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        }
+
+        .footer-enterprise .footer-col{
+            opacity: 0; transform: translateY(20px);
+            animation: ft-fadeUp .8s var(--ft-ease) forwards;
+        }
+        .footer-enterprise .footer-col:nth-child(1){ animation-delay: .05s; }
+        .footer-enterprise .footer-col:nth-child(2){ animation-delay: .15s; }
+        .footer-enterprise .footer-col:nth-child(3){ animation-delay: .25s; }
+        .footer-enterprise .footer-col:nth-child(4){ animation-delay: .35s; }
+
+        @@keyframes ft-fadeUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .footer-enterprise .footer-col-title{
+            font-size: 1.05rem; font-weight: 800; color: #fff;
+            margin: 0 0 18px; padding-bottom: 12px;
+            display: flex; align-items: center; gap: 10px;
+            position: relative;
+        }
+        .footer-enterprise .footer-col-title i{
+            width: 36px; height: 36px; border-radius: 10px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--ft-grad-accent);
+            color: #fff; font-size: .95rem;
+            box-shadow: 0 8px 20px -8px rgba(255,95,3,.55);
+        }
+        .footer-enterprise .footer-col-title::after{
+            content:""; position: absolute; right: 0; bottom: 0;
+            width: 60px; height: 2px; border-radius: 2px;
+            background: var(--ft-grad-accent);
+            transition: width .5s var(--ft-ease);
+        }
+        .footer-enterprise .footer-col:hover .footer-col-title::after{ width: 110px; }
+
+        .footer-enterprise .footer-link{
+            display: flex; align-items: center; gap: 10px;
+            color: #cbd5e1; text-decoration: none;
+            padding: 8px 10px; border-radius: 10px;
+            font-size: .92rem; font-weight: 600;
+            transition: color .3s ease, background .3s ease, transform .3s var(--ft-ease), padding .3s ease;
+        }
+        .footer-enterprise .footer-link i{
+            font-size: .8rem; color: var(--ft-accent);
+            transition: transform .35s var(--ft-ease);
+        }
+        .footer-enterprise .footer-link:hover{
+            color: #fff;
+            background: rgba(255,255,255,.06);
+            transform: translateX(-4px);
+            padding-right: 14px;
+        }
+        .footer-enterprise .footer-link:hover i{ transform: translateX(-3px) scale(1.1); }
+        .footer-enterprise .footer-link:focus-visible{
+            outline: 2px solid var(--ft-accent); outline-offset: 2px;
+        }
+        .footer-enterprise .footer-text{
+            color: #94a3b8; font-size: .88rem; line-height: 1.7;
+            padding: 0 10px;
+        }
+
+        /* Social buttons */
+        .footer-enterprise .social-btn{
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; margin-bottom: 10px;
+            border-radius: 14px; text-decoration: none;
+            background: rgba(255,255,255,.05);
+            border: 1px solid rgba(255,255,255,.08);
+            color: #e2e8f0;
+            position: relative; overflow: hidden;
+            transition: transform .35s var(--ft-ease), box-shadow .35s ease, background .35s ease, border-color .35s ease;
+        }
+        .footer-enterprise .social-btn::after{
+            content:""; position:absolute; inset:0;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+            transform: translateX(-100%); transition: transform .8s ease; pointer-events:none;
+        }
+        .footer-enterprise .social-btn:hover{
+            transform: translateY(-3px);
+            box-shadow: 0 14px 28px -12px rgba(0,0,0,.55);
+        }
+        .footer-enterprise .social-btn:hover::after{ transform: translateX(100%); }
+        .footer-enterprise .social-icon{
+            width: 42px; height: 42px; border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; color: #fff;
+            transition: transform .4s var(--ft-ease);
+        }
+        .footer-enterprise .social-btn:hover .social-icon{ transform: rotate(-8deg) scale(1.08); }
+        .footer-enterprise .social-btn.whatsapp .social-icon{
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            box-shadow: 0 8px 20px -8px rgba(37,211,102,.6);
+        }
+        .footer-enterprise .social-btn.facebook .social-icon{
+            background: linear-gradient(135deg, #1877F2, #0a4fbb);
+            box-shadow: 0 8px 20px -8px rgba(24,119,242,.6);
+        }
+        .footer-enterprise .social-btn.whatsapp:hover{
+            background: rgba(37,211,102,.10);
+            border-color: rgba(37,211,102,.35);
+        }
+        .footer-enterprise .social-btn.facebook:hover{
+            background: rgba(24,119,242,.10);
+            border-color: rgba(24,119,242,.35);
+        }
+        .footer-enterprise .social-label-sub{
+            font-size: .72rem; color: #94a3b8; font-weight: 600;
+        }
+        .footer-enterprise .social-label-main{
+            font-size: 1rem; color: #fff; font-weight: 800;
+        }
+
+        /* Developer badge */
+        .footer-enterprise .dev-badge{
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px;
+            background:
+              linear-gradient(rgba(7,44,44,.7), rgba(7,44,44,.7)) padding-box,
+              var(--ft-grad-mix) border-box;
+            border: 1.5px solid transparent;
+            border-radius: 16px;
+            transition: transform .4s var(--ft-ease), box-shadow .4s ease;
+        }
+        .footer-enterprise .dev-badge:hover{
+            transform: translateY(-3px);
+            box-shadow: 0 18px 40px -16px rgba(0,0,0,.55);
+        }
+        .footer-enterprise .dev-badge-icon{
+            width: 48px; height: 48px; border-radius: 14px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--ft-grad-primary);
+            color: #fff; font-size: 1.15rem;
+            box-shadow: 0 8px 20px -8px rgba(7,44,44,.7);
+            transition: transform .5s cubic-bezier(.34,1.56,.64,1);
+            flex-shrink: 0;
+        }
+        .footer-enterprise .dev-badge:hover .dev-badge-icon{ transform: rotate(-10deg) scale(1.08); }
+        .footer-enterprise .dev-badge-text{
+            font-size: .75rem; color: #94a3b8; font-weight: 600; margin-bottom: 2px;
+        }
+
+        /* Divider + copyright */
+        .footer-enterprise .footer-divider{
+            border: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+            margin: 8px 22px 0;
+        }
+        .footer-enterprise .footer-copyright{
+            text-align: center;
+            padding: 22px 22px 26px;
+            color: #94a3b8; font-size: .9rem; font-weight: 600;
+            display: flex; align-items: center; justify-content: center;
+            flex-wrap: wrap; gap: 6px;
+        }
+        .footer-enterprise .footer-copyright i{ color: var(--ft-accent); }
+        .footer-enterprise .footer-copyright span{
+            color: #fff; font-weight: 800;
+            background: var(--ft-grad-accent);
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ========== Back to top button ========== */
+        .lyt-totop{
+            position: fixed; bottom: 22px; left: 22px; z-index: 1040;
+            width: 48px; height: 48px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg,#072C2C 0%,#1e6b6b 100%);
+            color: #fff; border: none; cursor: pointer;
+            box-shadow: 0 14px 30px -10px rgba(7,44,44,.55);
+            opacity: 0; transform: translateY(20px) scale(.9);
+            pointer-events: none;
+            transition: opacity .35s ease, transform .45s cubic-bezier(.34,1.56,.64,1), box-shadow .35s ease;
+        }
+        .lyt-totop.is-visible{
+            opacity: 1; transform: translateY(0) scale(1); pointer-events: auto;
+        }
+        .lyt-totop:hover{
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 22px 40px -14px rgba(7,44,44,.7);
+        }
+        .lyt-totop:focus-visible{
+            outline: 2px solid #FF5F03; outline-offset: 3px;
+        }
+
+        /* ========== Reduced motion ========== */
+        @@media (prefers-reduced-motion: reduce){
+            .navbar-enterprise *, .navbar-enterprise *::before, .navbar-enterprise *::after,
+            .footer-enterprise *, .footer-enterprise *::before, .footer-enterprise *::after,
+            .lyt-totop{
+                animation: none !important;
+                transition: none !important;
+            }
+            .footer-enterprise .footer-col{ opacity: 1; transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="#main-content" class="lyt-skip">تخطّي إلى المحتوى الرئيسي</a>
+
+    <nav class="navbar-enterprise" role="navigation" aria-label="القائمة الرئيسية">
+        <div class="nav-container">
+
+            <a class="navbar-brand-logo" asp-area="Student" asp-controller="Home" asp-action="Index" aria-label="الصفحة الرئيسية">
+                <div class="brand-icon" style="background: #FFFFFFB8 !important; background-image: none !important; display: inline-flex; align-items: center; justify-content: center;">
+                   @*<i class="fas fa-graduation-cap" aria-hidden="true"></i>*@
+                  <img src="~/favicon.svg" alt="Summer Courses Portal" style="width: 45px; height: 45px;" />
+                </div>
+                <div>
+                    <div class="brand-text-main">Summer Courses Portal</div>
+                    <div class="brand-text-sub">كلية التربية — جامعة أسيوط</div>
+                </div>
+            </a>
+
+            <button class="mobile-toggle" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navMenu" aria-expanded="false"
+                    aria-controls="navMenu" aria-label="فتح القائمة">
+                <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="nav-enterprise" role="menubar">
+                    <li class="nav-enterprise-item" role="none">
+                        <a class="nav-enterprise-link" role="menuitem"
+                               asp-area="Student" asp-controller="Home" asp-action="Index">
+                            <i class="fas fa-home nav-icon" aria-hidden="true"></i>
+                            الرئيسية
+                        </a>
+                    </li>
+                    <li class="nav-enterprise-item" role="none">
+                        <a class="nav-enterprise-link" role="menuitem"
+                               asp-area="Student" asp-controller="Register" asp-action="Index">
+                            <i class="fas fa-user-plus nav-icon" aria-hidden="true"></i>
+                            تسجيل جديد
+                        </a>
+                    </li>
+                    <li class="nav-enterprise-item" role="none">
+                        <a class="nav-enterprise-link" role="menuitem"
+                               asp-area="Student" asp-controller="Search" asp-action="Index">
+                            <i class="fas fa-search nav-icon" aria-hidden="true"></i>
+                            البحث عن بيانات
+                        </a>
+                    </li>
+                    <li class="nav-enterprise-item" role="none">
+                        <a class="nav-enterprise-link" role="menuitem"
+                               asp-area="Student" asp-controller="News" asp-action="Index">
+                            <i class="fas fa-newspaper nav-icon" aria-hidden="true"></i>
+                            آخر الأخبار
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </nav>
+
+    <main class="main-content" id="main-content">
+        @RenderBody()
+    </main>
+
+    <footer class="footer-enterprise" role="contentinfo">
+        <div class="footer-main">
+            <div class="footer-container">
+                <div class="footer-grid">
+
+                    <!-- العمود الأول: روابط الجامعة -->
+                    <div class="footer-col">
+                        <h3 class="footer-col-title">
+                            <i class="fas fa-university" aria-hidden="true"></i>
+                            روابط مهمة
+                        </h3>
+                        <a class="footer-link" href="https://www.aun.edu.eg"
+                               target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                            جامعة أسيوط
+                        </a>
+                        <a class="footer-link" href="https://edu.aun.edu.eg"
+                               target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                            كلية التربية
+                        </a>
+                    </div>
+
+                    <!-- العمود الثاني: أقسام الموقع -->
+                    <div class="footer-col">
+                        <h3 class="footer-col-title">
+                            <i class="fas fa-sitemap" aria-hidden="true"></i>
+                            أقسام الموقع
+                        </h3>
+                        <a class="footer-link" asp-area="Student" asp-controller="Home" asp-action="Index">
+                            <i class="fas fa-home" aria-hidden="true"></i>
+                            الرئيسية
+                        </a>
+                        <a class="footer-link" asp-area="Student" asp-controller="Register" asp-action="Index">
+                            <i class="fas fa-user-plus" aria-hidden="true"></i>
+                            تسجيل جديد
+                        </a>
+                        <a class="footer-link" asp-area="Student" asp-controller="Search" asp-action="Index">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            البحث عن بيانات
+                        </a>
+                        <a class="footer-link" asp-area="Student" asp-controller="News" asp-action="Index">
+                            <i class="fas fa-newspaper" aria-hidden="true"></i>
+                            آخر الأخبار
+                        </a>
+                    </div>
+
+                    <!-- العمود الثالث: تواصل معنا -->
+                    <div class="footer-col">
+                        <h3 class="footer-col-title">
+                            <i class="fas fa-headset" aria-hidden="true"></i>
+                            تواصل معنا
+                        </h3>
+                        <a class="social-btn whatsapp" href="https://wa.me/200000000000"
+                               target="_blank" rel="noopener noreferrer" aria-label="تواصل عبر واتساب">
+                            <span class="social-icon">
+                                <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                            </span>
+                            <div>
+                                <div class="social-label-sub">راسلنا على</div>
+                                <div class="social-label-main">واتساب</div>
+                            </div>
+                        </a>
+                        <a class="social-btn facebook" href="https://www.facebook.com/p/100080100211494"
+                               target="_blank" rel="noopener noreferrer" aria-label="تابعنا على فيسبوك">
+                            <span class="social-icon">
+                                <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                            </span>
+                            <div>
+                                <div class="social-label-sub">تابعنا على</div>
+                                <div class="social-label-main">فيسبوك</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- العمود الرابع: Developed By -->
+                    <div class="footer-col">
+                        <h3 class="footer-col-title">
+                            <i class="fas fa-code" aria-hidden="true"></i>
+                            المطوّرون
+                        </h3>
+                        <a class="dev-badge" asp-area="Student" asp-controller="Developers" asp-action="Index"
+                           style="text-decoration:none;">
+                            <div class="dev-badge-icon">
+                                <i class="fas fa-laptop-code" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <div class="dev-badge-text">Developed by</div>
+                                <span class="footer-link" style="padding:0;">
+                                    تعرّف على فريق التطوير
+                                    <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                                </span>
+                            </div>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <hr class="footer-divider" />
+
+        <div class="footer-copyright">
+            <i class="far fa-copyright" aria-hidden="true"></i>
+            جميع الحقوق محفوظة
+            <span>@DateTime.Now.Year</span>
+            &mdash;Summer Courses Portal &mdash; كلية التربية، جامعة أسيوط
+        </div>
+    </footer>
+
+    <!-- Back to top button -->
+    <button type="button" class="lyt-totop" aria-label="العودة لأعلى الصفحة">
+        <i class="fas fa-arrow-up" aria-hidden="true"></i>
+    </button>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @*
+        ═══════════════════════════════════════════════════════════════
+          Vanilla JS — لا يستخدم eval ولا innerHTML على بيانات خارجية.
+          • Sticky scroll shadow على الـ navbar.
+          • Active link auto-detect حسب الـ URL الحالي.
+          • Fallback toggle لو Bootstrap collapse مش متاح.
+          • قفل القائمة عند الضغط خارجها أو على Esc.
+          • Back-to-top button مع scroll smooth.
+          • يحترم prefers-reduced-motion.
+        ═══════════════════════════════════════════════════════════════
+    *@
+    <script>
+        (function () {
+            'use strict';
+
+            var navbar = document.querySelector('.navbar-enterprise');
+            var totop  = document.querySelector('.lyt-totop');
+
+            var prefersReduced = window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // ===== NAVBAR =====
+            if (navbar){
+                var toggle   = navbar.querySelector('.mobile-toggle');
+                var collapse = navbar.querySelector('#navMenu');
+                var links    = navbar.querySelectorAll('.nav-enterprise-link');
+
+                // 1) Scrolled state على navbar + Back-to-top visibility
+                function onScroll(){
+                    var y = window.scrollY || window.pageYOffset || 0;
+                    if (y > 8) navbar.classList.add('nv-scrolled');
+                    else navbar.classList.remove('nv-scrolled');
+                    if (totop){
+                        if (y > 320) totop.classList.add('is-visible');
+                        else totop.classList.remove('is-visible');
+                    }
+                }
+                window.addEventListener('scroll', onScroll, { passive: true });
+                onScroll();
+
+                // 2) Active link auto-detect (مقارنة آمنة بالـ pathname)
+                try {
+                    var currentPath = (window.location.pathname || '').toLowerCase().replace(/\/+$/, '');
+                    links.forEach(function (a) {
+                        var hrefAttr = a.getAttribute('href') || '';
+                        if (!hrefAttr || hrefAttr === '#') return;
+                        var linkPath = '';
+                        try {
+                            linkPath = new URL(a.href, window.location.origin).pathname.toLowerCase().replace(/\/+$/, '');
+                        } catch (e) { return; }
+                        if (linkPath && linkPath === currentPath) {
+                            a.classList.add('active');
+                            a.setAttribute('aria-current', 'page');
+                        }
+                    });
+                } catch (e) { /* تجاهل بأمان */ }
+
+                // 3) Fallback toggle (لو Bootstrap collapse مش متاح)
+                var hasBootstrap = !!(window.bootstrap && window.bootstrap.Collapse);
+
+                function setOpen(open){
+                    if (!collapse || !toggle) return;
+                    if (open){
+                        collapse.classList.add('nv-open');
+                        toggle.setAttribute('aria-expanded', 'true');
+                        toggle.setAttribute('aria-label', 'إغلاق القائمة');
+                    } else {
+                        collapse.classList.remove('nv-open');
+                        toggle.setAttribute('aria-expanded', 'false');
+                        toggle.setAttribute('aria-label', 'فتح القائمة');
+                    }
+                }
+
+                if (!hasBootstrap && toggle && collapse){
+                    toggle.removeAttribute('data-bs-toggle');
+                    toggle.removeAttribute('data-bs-target');
+                    toggle.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        setOpen(!collapse.classList.contains('nv-open'));
+                    });
+                }
+
+                // 4) قفل القائمة عند اختيار رابط (موبايل)
+                links.forEach(function (a) {
+                    a.addEventListener('click', function () {
+                        if (window.matchMedia('(max-width: 991.98px)').matches){
+                            if (hasBootstrap){
+                                try {
+                                    var inst = window.bootstrap.Collapse.getOrCreateInstance(collapse, { toggle: false });
+                                    inst.hide();
+                                } catch (e) { setOpen(false); }
+                            } else {
+                                setOpen(false);
+                            }
+                        }
+                    });
+                });
+
+                // 5) قفل عند الضغط خارج القائمة
+                document.addEventListener('click', function (e) {
+                    if (!window.matchMedia('(max-width: 991.98px)').matches) return;
+                    if (!collapse || !toggle) return;
+                    var isOpen = collapse.classList.contains('show') || collapse.classList.contains('nv-open');
+                    if (!isOpen) return;
+                    if (collapse.contains(e.target) || toggle.contains(e.target)) return;
+                    if (hasBootstrap){
+                        try {
+                            var inst = window.bootstrap.Collapse.getOrCreateInstance(collapse, { toggle: false });
+                            inst.hide();
+                        } catch (err) { setOpen(false); }
+                    } else {
+                        setOpen(false);
+                    }
+                });
+
+                // 6) قفل بزر Escape
+                document.addEventListener('keydown', function (e) {
+                    if (e.key !== 'Escape') return;
+                    if (!collapse) return;
+                    if (collapse.classList.contains('show') || collapse.classList.contains('nv-open')){
+                        if (hasBootstrap){
+                            try {
+                                var inst = window.bootstrap.Collapse.getOrCreateInstance(collapse, { toggle: false });
+                                inst.hide();
+                            } catch (err) { setOpen(false); }
+                        } else {
+                            setOpen(false);
+                        }
+                        if (toggle) toggle.focus();
+                    }
+                });
+
+                // 7) مزامنة aria-expanded مع أحداث Bootstrap collapse
+                if (collapse){
+                    collapse.addEventListener('shown.bs.collapse', function () {
+                        if (toggle){
+                            toggle.setAttribute('aria-expanded', 'true');
+                            toggle.setAttribute('aria-label', 'إغلاق القائمة');
+                        }
+                    });
+                    collapse.addEventListener('hidden.bs.collapse', function () {
+                        if (toggle){
+                            toggle.setAttribute('aria-expanded', 'false');
+                            toggle.setAttribute('aria-label', 'فتح القائمة');
+                        }
+                    });
+                }
+
+                // 8) لو حصل resize للديسكتوب وكانت القائمة مفتوحة على الموبايل، نقفلها
+                var mq = window.matchMedia('(min-width: 992px)');
+                function onMqChange(ev){
+                    if (ev.matches){
+                        if (hasBootstrap && collapse){
+                            try {
+                                var inst = window.bootstrap.Collapse.getOrCreateInstance(collapse, { toggle: false });
+                                inst.hide();
+                            } catch (e) { /* تجاهل */ }
+                        }
+                        setOpen(false);
+                    }
+                }
+                if (mq.addEventListener) mq.addEventListener('change', onMqChange);
+                else if (mq.addListener) mq.addListener(onMqChange);
+            }
+
+            // ===== Back to top =====
+            if (totop){
+                totop.addEventListener('click', function () {
+                    try {
+                        window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' });
+                    } catch (e) {
+                        window.scrollTo(0, 0);
+                    }
+                });
+            }
+        })();
+    </script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

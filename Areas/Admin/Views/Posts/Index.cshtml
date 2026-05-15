@@ -1,0 +1,540 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      Admin/Posts/Index.cshtml — Indigo Command Center Theme
+      • نفس هوية لوحة الإدارة: Indigo + Cyan + Magenta + Purple.
+      • Glassmorphism cards + aurora orbs + shine + hover.
+      • Class prefix: apl-* (Admin Posts List).
+      • أزرار حذف بـ addEventListener (مفيش inline onclick).
+      • صفر تعديل في الـ Backend — كل asp-* و AntiForgeryToken محفوظة.
+    ═══════════════════════════════════════════════════════════════
+*@
+@model IEnumerable<WebApplication1.Models.Post>
+@{
+    ViewData["Title"] = "إدارة المنشورات";
+}
+
+<style>
+    .apl-scope{
+        --apl-primary:#4F46E5;
+        --apl-accent:#06B6D4;
+        --apl-magenta:#EC4899;
+        --apl-purple:#8B5CF6;
+        --apl-success:#10B981;
+        --apl-warning:#F59E0B;
+        --apl-danger:#EF4444;
+        --apl-text:#0F172A;
+        --apl-muted:#64748B;
+        --apl-border:#E2E8F0;
+        --apl-ease: cubic-bezier(.22,.61,.36,1);
+        --apl-grad-primary: linear-gradient(135deg,#4F46E5 0%,#06B6D4 100%);
+        --apl-grad-purple:  linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%);
+        --apl-grad-magenta: linear-gradient(135deg,#EC4899 0%,#F472B6 100%);
+        --apl-grad-success: linear-gradient(135deg,#10B981 0%,#34D399 100%);
+        --apl-grad-warning: linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
+        --apl-grad-danger:  linear-gradient(135deg,#EF4444 0%,#F87171 100%);
+    }
+
+    @@keyframes apl-up   { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes apl-shine{ 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+    @@keyframes apl-shake{ 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
+
+    .apl-alert{
+        position: relative;
+        border: none;
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        font-weight: 700;
+        display: flex; align-items: center; gap: 10px;
+        animation: apl-up .35s var(--apl-ease) both;
+        overflow: hidden;
+    }
+    .apl-alert::before{
+        content:""; position:absolute; right:0; top:0; bottom:0; width: 5px;
+    }
+    .apl-alert-success{ background: linear-gradient(135deg,#ECFDF5,#D1FAE5); color:#065F46; }
+    .apl-alert-success::before{ background: var(--apl-success); }
+    .apl-alert-error  { background: linear-gradient(135deg,#FEF2F2,#FEE2E2); color:#991B1B; animation: apl-shake .5s ease; }
+    .apl-alert-error::before{ background: var(--apl-danger); }
+
+    .apl-header{
+        display: flex; justify-content: space-between; align-items: center;
+        flex-wrap: wrap; gap: 1rem;
+        margin-bottom: 1.5rem;
+        animation: apl-up .55s var(--apl-ease) both;
+    }
+    .apl-header-title{
+        display: flex; align-items: center; gap: 14px;
+    }
+    .apl-header-icon{
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        background: var(--apl-grad-primary);
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 1.3rem;
+        box-shadow: 0 12px 24px -8px rgba(139,92,246,.5);
+        position: relative; overflow: hidden;
+    }
+    .apl-header-icon::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: apl-shine 3s ease-in-out infinite;
+    }
+    .apl-header h1{
+        font-weight: 800; margin: 0;
+        color: var(--apl-text); font-size: 1.4rem;
+    }
+    .apl-header small{ color: var(--apl-muted); font-weight: 600; }
+
+    .apl-btn{
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: .7rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 800; font-size: .92rem;
+        font-family: 'Cairo', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        border: none;
+        position: relative; overflow: hidden; isolation: isolate;
+        transition: transform .25s var(--apl-ease), box-shadow .25s ease;
+        color: #fff;
+    }
+    .apl-btn::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform .8s ease;
+    }
+    .apl-btn:hover{ transform: translateY(-2px); color:#fff; }
+    .apl-btn:hover::after{ transform: translateX(100%); }
+    .apl-btn:focus-visible{ outline: 2px solid var(--apl-accent); outline-offset: 3px; }
+    .apl-btn-primary{ background: var(--apl-grad-primary); box-shadow: 0 10px 24px -8px rgba(79,70,229,.5); }
+    .apl-btn-danger { background: var(--apl-grad-danger);  box-shadow: 0 10px 24px -8px rgba(239,68,68,.45); }
+    .apl-btn-success{ background: var(--apl-grad-success); box-shadow: 0 10px 24px -8px rgba(16,185,129,.45); }
+
+    .apl-empty{
+        background: #fff;
+        border-radius: 20px;
+        padding: 3rem 2rem;
+        text-align: center;
+        box-shadow: 0 12px 40px rgba(15,23,42,.08);
+        position: relative; overflow: hidden;
+        animation: apl-up .55s var(--apl-ease) both;
+    }
+    .apl-empty::before{
+        content:""; position:absolute; left:0; right:0; top:0; height: 5px;
+        background: linear-gradient(90deg, var(--apl-primary), var(--apl-accent), var(--apl-magenta));
+    }
+    .apl-empty-icon{
+        width: 90px; height: 90px;
+        margin: 0 auto 1rem;
+        border-radius: 24px;
+        background: linear-gradient(135deg,#F1F5F9,#E2E8F0);
+        display: inline-flex; align-items: center; justify-content: center;
+        color: var(--apl-muted); font-size: 2.4rem;
+    }
+    .apl-empty h2{ font-weight: 800; color: var(--apl-text); font-size: 1.15rem; margin: 0 0 .25rem; }
+    .apl-empty p{ color: var(--apl-muted); margin: 0 0 1.25rem; font-size: .92rem; }
+
+    .apl-list{ display: flex; flex-direction: column; gap: 1rem; }
+    .apl-card{
+        position: relative;
+        background: #fff;
+        border-radius: 18px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 6px 20px rgba(15,23,42,.06);
+        border: 1px solid #F1F5F9;
+        transition: transform .3s var(--apl-ease), box-shadow .3s ease, border-color .3s ease;
+        animation: apl-up .45s var(--apl-ease) both;
+        overflow: hidden;
+    }
+    .apl-card::before{
+        content:""; position:absolute; right:0; top:0; bottom:0; width: 4px;
+        background: linear-gradient(180deg, var(--apl-primary), var(--apl-accent));
+        opacity: 0;
+        transition: opacity .3s ease;
+    }
+    .apl-card:hover{
+        transform: translateY(-3px);
+        box-shadow: 0 16px 36px rgba(79,70,229,.12);
+        border-color: rgba(79,70,229,.15);
+    }
+    .apl-card:hover::before{ opacity: 1; }
+
+    .apl-thumb{
+        width: 100%; height: 100px;
+        border-radius: 14px;
+        object-fit: cover;
+        box-shadow: 0 6px 16px rgba(0,0,0,.12);
+    }
+    .apl-thumb-fallback{
+        width: 100%; height: 100px;
+        border-radius: 14px;
+        background: var(--apl-grad-primary);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 2rem;
+        position: relative; overflow: hidden;
+        box-shadow: 0 6px 16px rgba(139,92,246,.3);
+    }
+    .apl-thumb-fallback::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.3) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: apl-shine 4s ease-in-out infinite;
+    }
+
+    .apl-post-title{
+        font-weight: 800; color: var(--apl-text);
+        font-size: 1.05rem; margin: 0 0 .5rem;
+    }
+    .apl-post-excerpt{
+        color: var(--apl-muted); font-size: .88rem;
+        margin: 0 0 .65rem; line-height: 1.7;
+    }
+    .apl-meta{ display: flex; gap: 8px; flex-wrap: wrap; }
+    .apl-pill{
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: .78rem; font-weight: 700;
+        border: 1px solid;
+    }
+    .apl-pill-date  { background:#EEF2FF; color:#4338CA; border-color:#C7D2FE; }
+    .apl-pill-attach{ background:#ECFDF5; color:#047857; border-color:#A7F3D0; }
+
+    .apl-actions{ display: flex; flex-direction: column; gap: 8px; }
+    .apl-btn-sm{
+        padding: .55rem .85rem;
+        font-size: .82rem;
+        border-radius: 10px;
+    }
+    .apl-btn-preview{
+        background: #ECFDF5; color: #047857;
+        border: 1px solid #A7F3D0;
+    }
+    .apl-btn-preview:hover{ background:#D1FAE5; color:#065F46; transform: translateY(-1px); }
+
+    /* ═══════════ Modal Styling ═══════════ */
+    .apl-modal-content{
+        border: none; border-radius: 18px; overflow: hidden;
+        box-shadow: 0 30px 60px rgba(15,23,42,.4);
+    }
+    .apl-modal-header{
+        background: var(--apl-grad-danger);
+        border: none;
+        padding: 1.1rem 1.5rem;
+    }
+    .apl-modal-title{
+        color: #fff; font-weight: 800;
+        display: flex; align-items: center; gap: 10px;
+        margin: 0;
+    }
+    .apl-modal-body{ padding: 1.75rem; }
+    .apl-modal-warn{
+        background: #FEF2F2;
+        border: none;
+        border-right: 5px solid var(--apl-danger);
+        border-radius: 12px;
+        color: #991B1B;
+        font-weight: 700;
+        padding: .85rem 1rem;
+        margin-bottom: 1.25rem;
+        display: flex; align-items: flex-start; gap: 10px;
+    }
+    .apl-modal-label{
+        display: flex; align-items: center; gap: 8px;
+        font-weight: 700; color: #374151;
+        margin-bottom: .5rem; font-size: .92rem;
+    }
+    .apl-modal-input{
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--apl-border);
+        padding: 12px 14px;
+        font-family: 'Cairo', sans-serif;
+        background: #F8FAFC;
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
+    }
+    .apl-modal-input:focus{
+        outline: none;
+        background: #fff;
+        border-color: var(--apl-danger);
+        box-shadow: 0 0 0 4px rgba(239,68,68,.15);
+    }
+    .apl-modal-cancel{
+        background: #fff;
+        color: var(--apl-text);
+        border: 2px solid var(--apl-border);
+        border-radius: 12px;
+        padding: .75rem 1rem;
+        font-weight: 800;
+        font-family: 'Cairo', sans-serif;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+    .apl-modal-cancel:hover{
+        background: #F8FAFC;
+        border-color: var(--apl-primary);
+        color: var(--apl-primary);
+    }
+
+    @@media (prefers-reduced-motion: reduce){
+        .apl-scope *, .apl-scope *::before, .apl-scope *::after{
+            animation: none !important; transition: none !important;
+        }
+    }
+</style>
+
+<div class="apl-scope">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="apl-alert apl-alert-success" role="status">
+            <i class="fas fa-circle-check" aria-hidden="true"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="apl-alert apl-alert-error" role="alert">
+            <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- Header -->
+    <div class="apl-header">
+        <div class="apl-header-title">
+            <div class="apl-header-icon" aria-hidden="true">
+                <i class="fas fa-newspaper"></i>
+            </div>
+            <div>
+                <h1>إدارة المنشورات</h1>
+                <small>إجمالي: @Model.Count() منشور</small>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a asp-area="Admin" asp-controller="Posts" asp-action="Create"
+               class="apl-btn apl-btn-primary">
+                <i class="fas fa-plus" aria-hidden="true"></i>
+                منشور جديد
+            </a>
+            @if (Model.Any())
+            {
+                <button type="button" id="apl-open-delete-all" class="apl-btn apl-btn-danger">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                    حذف الكل
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Posts -->
+    @if (!Model.Any())
+    {
+        <div class="apl-empty">
+            <div class="apl-empty-icon" aria-hidden="true">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <h2>لا توجد منشورات</h2>
+            <p>ابدأ بإنشاء أول منشور لطلابك</p>
+            <a asp-area="Admin" asp-controller="Posts" asp-action="Create"
+               class="apl-btn apl-btn-primary">
+                <i class="fas fa-plus" aria-hidden="true"></i>
+                أنشئ أول منشور
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="apl-list">
+            @foreach (var post in Model)
+            {
+                var images = post.Attachments
+                    .Where(a => a.Type == WebApplication1.Models.AttachmentType.Image)
+                    .ToList();
+
+                <div class="apl-card">
+                    <div class="row g-3 align-items-center">
+
+                        <!-- صورة مصغرة -->
+                        <div class="col-md-2 d-none d-md-block">
+                            @if (images.Any())
+                            {
+                                <img src="@images[0].FilePath" alt="" class="apl-thumb" />
+                            }
+                            else
+                            {
+                                <div class="apl-thumb-fallback" aria-hidden="true">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- المحتوى -->
+                        <div class="col-md-7">
+                            <h3 class="apl-post-title">@post.Title</h3>
+                            <p class="apl-post-excerpt">
+                                @(post.Content.Length > 120
+                                    ? post.Content.Substring(0, 120) + "..."
+                                    : post.Content)
+                            </p>
+                            <div class="apl-meta">
+                                <span class="apl-pill apl-pill-date">
+                                    <i class="fas fa-calendar" aria-hidden="true"></i>
+                                    @post.CreatedAt.ToString("yyyy/MM/dd")
+                                </span>
+                                @if (post.Attachments.Any())
+                                {
+                                    <span class="apl-pill apl-pill-attach">
+                                        <i class="fas fa-paperclip" aria-hidden="true"></i>
+                                        @post.Attachments.Count مرفق
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- أزرار -->
+                        <div class="col-md-3">
+                            <div class="apl-actions">
+                                <a asp-area="Student"
+                                   asp-controller="News"
+                                   asp-action="Details"
+                                   asp-route-id="@post.Id"
+                                   target="_blank"
+                                   class="apl-btn apl-btn-sm apl-btn-preview">
+                                    <i class="fas fa-eye" aria-hidden="true"></i>
+                                    معاينة
+                                </a>
+                                <a asp-area="Admin"
+                                   asp-controller="Posts"
+                                   asp-action="Edit"
+                                   asp-route-id="@post.Id"
+                                   class="apl-btn apl-btn-primary apl-btn-sm">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                    تعديل
+                                </a>
+                                <button type="button"
+                                        class="apl-btn apl-btn-danger apl-btn-sm apl-delete-btn"
+                                        data-post-id="@post.Id"
+                                        data-post-title="@post.Title">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                    حذف
+                                </button>
+
+                                <form id="deletePostForm_@post.Id"
+                                      asp-area="Admin"
+                                      asp-controller="Posts"
+                                      asp-action="Delete"
+                                      method="post"
+                                      style="display:none">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@post.Id" />
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Modal حذف الكل -->
+    <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content apl-modal-content">
+                <div class="modal-header apl-modal-header">
+                    <h5 class="apl-modal-title">
+                        <i class="fas fa-trash" aria-hidden="true"></i>
+                        حذف كل المنشورات
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="apl-modal-body">
+                    <div class="apl-modal-warn">
+                        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                        <span>سيتم حذف <strong>جميع المنشورات</strong> نهائياً ولن يمكن استرجاعها!</span>
+                    </div>
+                    <form asp-area="Admin"
+                          asp-controller="Posts"
+                          asp-action="DeleteAll"
+                          method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="apl-modal-label">
+                                <i class="fas fa-user" style="color:var(--apl-danger)" aria-hidden="true"></i>
+                                اسم المستخدم
+                            </label>
+                            <input type="text" name="confirmUsername"
+                                   class="apl-modal-input"
+                                   placeholder="أدخل اسم المستخدم"
+                                   required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="apl-modal-label">
+                                <i class="fas fa-lock" style="color:var(--apl-danger)" aria-hidden="true"></i>
+                                كلمة المرور
+                            </label>
+                            <input type="password" name="confirmPassword"
+                                   class="apl-modal-input"
+                                   placeholder="أدخل كلمة المرور"
+                                   required />
+                        </div>
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="apl-btn apl-btn-danger" style="flex:1; padding:.85rem">
+                                <i class="fas fa-check" aria-hidden="true"></i>
+                                تأكيد الحذف
+                            </button>
+                            <button type="button" class="apl-modal-cancel" style="flex:1" data-bs-dismiss="modal">
+                                إلغاء
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            // فتح Modal حذف الكل
+            const openDeleteAllBtn = document.getElementById('apl-open-delete-all');
+            if (openDeleteAllBtn) {
+                openDeleteAllBtn.addEventListener('click', function () {
+                    new bootstrap.Modal(document.getElementById('deleteAllModal')).show();
+                });
+            }
+
+            // حذف منشور واحد عبر SweetAlert
+            document.querySelectorAll('.apl-delete-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const id    = btn.getAttribute('data-post-id');
+                    const title = btn.getAttribute('data-post-title') || '';
+
+                    Swal.fire({
+                        title: 'حذف المنشور',
+                        text: `سيتم حذف "${title}" نهائياً!`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#EF4444',
+                        cancelButtonColor:  '#4F46E5',
+                        confirmButtonText:  'نعم، احذف!',
+                        cancelButtonText:   'إلغاء',
+                        reverseButtons: true,
+                        customClass: { popup: 'apl-swal' }
+                    }).then(function (r) {
+                        if (r.isConfirmed) {
+                            const form = document.getElementById(`deletePostForm_${id}`);
+                            if (form) form.submit();
+                        }
+                    });
+                });
+            });
+        })();
+    </script>
+}

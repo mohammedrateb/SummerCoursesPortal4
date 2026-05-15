@@ -1,0 +1,721 @@
+﻿@{
+    ViewData["Title"] = "الرئيسية";
+    Layout = "~/Areas/Student/Views/Shared/_Layout.cshtml";
+}
+
+@*
+    ═══════════════════════════════════════════════════════════════
+      ملاحظات مهمة:
+      • لا يوجد أي تعديل على الـ Backend.
+      • تم الإبقاء على نفس بنية الـ Razor و asp-* helpers والـ CSS classes الأصلية.
+      • التحسينات كلها على طبقة العرض (CSS + Vanilla JS باستخدام Native APIs فقط).
+      • الـ Script لا يحقن HTML ولا يستخدم eval → آمن من XSS.
+      • يحترم تفضيل prefers-reduced-motion للمستخدمين.
+    ═══════════════════════════════════════════════════════════════
+*@
+
+<!-- ═══════════════════════════════════════
+     ENHANCED VISUAL LAYER (CSS only)
+═══════════════════════════════════════ -->
+<style>
+    /* ========== Design Tokens (محلية فقط، لا تطغى على الموجود) ========== */
+    :root {
+        --scp-ease: cubic-bezier(.22,.61,.36,1);
+        --scp-bounce: cubic-bezier(.34,1.56,.64,1);
+        --scp-glass-bg: rgba(255,255,255,.55);
+        --scp-glass-border: rgba(255,255,255,.65);
+        --scp-shadow-soft: 0 10px 30px -12px rgba(7,44,44,.15);
+        --scp-shadow-hover: 0 24px 55px -18px rgba(7,44,44,.28);
+        --scp-grad-primary: linear-gradient(135deg,#072C2C 0%,#1e6b6b 100%);
+        --scp-grad-accent:  linear-gradient(135deg,#FF5F03 0%,#ffb060 100%);
+        --scp-grad-mix:     linear-gradient(120deg,#072C2C,#1e6b6b 40%,#FF5F03);
+    }
+
+    /* ========== Keyframes ========== */
+    @@keyframes scp-fadeUp   { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes scp-zoomIn   { from{opacity:0;transform:scale(.9)}        to{opacity:1;transform:scale(1)} }
+    @@keyframes scp-slideR   { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
+    @@keyframes scp-slideL   { from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)} }
+    @@keyframes scp-float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    @@keyframes scp-floatRev { 0%,100%{transform:translateY(0)} 50%{transform:translateY(10px)} }
+    @@keyframes scp-pulseGlow{ 0%,100%{box-shadow:0 0 0 0 rgba(7,44,44,.35)} 50%{box-shadow:0 0 0 14px rgba(7,44,44,0)} }
+    @@keyframes scp-shimmer  { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @@keyframes scp-spinSlow { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+    @@keyframes scp-borderRotate { to { --scp-angle: 360deg; } }
+    @@keyframes scp-blob {
+        0%,100% { border-radius: 42% 58% 70% 30% / 45% 30% 70% 55%; }
+        50%     { border-radius: 70% 30% 46% 54% / 30% 60% 40% 70%; }
+    }
+    @@keyframes scp-twinkle { 0%,100%{opacity:.25;transform:scale(1)} 50%{opacity:.9;transform:scale(1.4)} }
+
+    /* ========== Reveal-on-scroll ========== */
+    .scp-reveal,.scp-reveal-zoom,.scp-reveal-right,.scp-reveal-left{opacity:0;will-change:opacity,transform}
+    .scp-reveal.scp-in       { animation: scp-fadeUp .9s var(--scp-ease) forwards; }
+    .scp-reveal-zoom.scp-in  { animation: scp-zoomIn .8s var(--scp-ease) forwards; }
+    .scp-reveal-right.scp-in { animation: scp-slideR .8s var(--scp-ease) forwards; }
+    .scp-reveal-left.scp-in  { animation: scp-slideL .8s var(--scp-ease) forwards; }
+    .scp-d1{animation-delay:.08s}.scp-d2{animation-delay:.18s}.scp-d3{animation-delay:.28s}
+    .scp-d4{animation-delay:.38s}.scp-d5{animation-delay:.48s}
+
+    /* ========== HERO Background — Aurora + Grid + Particles ========== */
+    .hero-section{ position:relative; overflow:hidden; isolation:isolate; }
+    .hero-section::before{
+        content:""; position:absolute; inset:-20%; z-index:-2;
+        background:
+          radial-gradient(40% 35% at 20% 25%, rgba(255,95,3,.18), transparent 60%),
+          radial-gradient(45% 40% at 80% 30%, rgba(30,107,107,.22), transparent 60%),
+          radial-gradient(50% 45% at 50% 90%, rgba(7,44,44,.18), transparent 65%);
+        animation: scp-float 12s ease-in-out infinite;
+    }
+    .hero-section::after{
+        content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+        background-image:
+          linear-gradient(rgba(7,44,44,.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(7,44,44,.04) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+        -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+    }
+    /* Floating blob decoration */
+    .hero-deco-1, .hero-deco-2 {
+        background: var(--scp-grad-primary);
+        opacity:.10;
+        filter: blur(40px);
+        animation: scp-blob 14s ease-in-out infinite, scp-float 9s ease-in-out infinite;
+    }
+    .hero-deco-2 { background: var(--scp-grad-accent); animation: scp-blob 16s ease-in-out infinite reverse, scp-floatRev 11s ease-in-out infinite; }
+
+    /* Twinkling stars layer */
+    .scp-stars{ position:absolute; inset:0; pointer-events:none; z-index:-1; }
+    .scp-stars i{
+        position:absolute; width:6px; height:6px; border-radius:50%;
+        background: radial-gradient(circle, #FF5F03 0%, transparent 70%);
+        opacity:.5; animation: scp-twinkle 4s ease-in-out infinite;
+    }
+
+    /* ========== Logo Circle — gradient ring + glassmorphism ========== */
+    .logo-circle{
+        position: relative;
+        background: var(--scp-glass-bg);
+        backdrop-filter: blur(10px) saturate(140%);
+        -webkit-backdrop-filter: blur(10px) saturate(140%);
+        border: 1px solid var(--scp-glass-border);
+        transition: transform .55s var(--scp-ease), box-shadow .55s ease;
+    }
+    .logo-circle::before{
+        content:""; position:absolute; inset:-3px; border-radius:inherit; padding:3px;
+        background: conic-gradient(from var(--scp-angle,0deg), #072C2C, #1e6b6b, #FF5F03, #072C2C);
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+                mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+                mask-composite: exclude;
+        animation: scp-borderRotate 8s linear infinite;
+        opacity:.85;
+    }
+    @@property --scp-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+
+    .logo-circle:hover{ transform: translateY(-8px) scale(1.06); box-shadow: var(--scp-shadow-hover); }
+    .logo-circle img{ transition: transform .6s var(--scp-ease); }
+    .logo-circle:hover img{ transform: scale(1.10) rotate(-2deg); }
+
+    /* ========== Portal title & badge ========== */
+    .portal-badge{
+        position: relative; overflow: hidden;
+        animation: scp-pulseGlow 2.6s ease-out infinite;
+    }
+    .portal-badge i{ display:inline-block; animation: scp-spinSlow 14s linear infinite; }
+    .portal-badge::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: scp-shimmer 3.5s ease-in-out infinite;
+    }
+
+    .portal-title{
+        background-image: var(--scp-grad-mix);
+        background-size: 220% auto;
+        -webkit-background-clip: text;
+                background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: scp-shimmer 8s linear infinite;
+    }
+
+    /* ========== Buttons — Magnetic + Shine + Gradient on Primary ========== */
+    .btn-hero-primary, .btn-cta {
+        background: var(--scp-grad-primary);
+        background-size: 180% 180%;
+        background-position: 0% 50%;
+        transition: background-position .6s ease, transform .35s var(--scp-ease), box-shadow .35s ease;
+    }
+    .btn-hero-primary:hover, .btn-cta:hover { background-position: 100% 50%; }
+
+    .btn-hero-primary, .btn-hero-ghost,
+    .service-btn, .btn-affil-primary, .btn-affil-ghost, .btn-cta{
+        position:relative; overflow:hidden;
+        transition: transform .35s var(--scp-ease), box-shadow .35s ease, background-color .35s ease, background-position .6s ease;
+    }
+    .btn-hero-primary::after, .service-btn::after, .btn-cta::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform .7s ease;
+        pointer-events:none;
+    }
+    .btn-hero-primary:hover, .service-btn:hover, .btn-cta:hover{
+        transform: translateY(-4px);
+        box-shadow: 0 16px 36px -10px rgba(0,0,0,.32);
+    }
+    .btn-hero-primary:hover::after, .service-btn:hover::after, .btn-cta:hover::after{ transform: translateX(100%); }
+    .btn-hero-ghost:hover, .btn-affil-ghost:hover{ transform: translateY(-4px); }
+
+    .btn-hero-primary i, .btn-hero-ghost i, .service-btn i, .btn-cta i{ transition: transform .4s ease; }
+    .btn-hero-primary:hover i, .btn-cta:hover i{ transform: translateX(-5px); }
+    .service-btn:hover i{ transform: translateX(-7px); }
+
+    /* ========== Cards — Glass + Gradient Border + Tilt ========== */
+    .info-card, .service-card, .step-card{
+        position: relative;
+        background: linear-gradient(var(--scp-glass-bg), var(--scp-glass-bg)) padding-box,
+                    linear-gradient(135deg, rgba(7,44,44,.18), rgba(255,95,3,.18)) border-box;
+        border: 1px solid transparent;
+        backdrop-filter: blur(8px) saturate(130%);
+        -webkit-backdrop-filter: blur(8px) saturate(130%);
+        box-shadow: var(--scp-shadow-soft);
+        transition: transform .5s var(--scp-ease), box-shadow .5s ease, border-color .5s ease;
+        will-change: transform;
+        transform-style: preserve-3d;
+    }
+    .info-card:hover, .service-card:hover, .step-card:hover{
+        transform: translateY(-10px);
+        box-shadow: var(--scp-shadow-hover);
+    }
+
+    /* spotlight follow cursor */
+    .info-card::after, .service-card::after, .step-card::after{
+        content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+        background: radial-gradient(380px circle at var(--mx,50%) var(--my,0%),
+                    rgba(255,95,3,.10), transparent 45%);
+        opacity:0; transition: opacity .4s ease;
+    }
+    .info-card:hover::after, .service-card:hover::after, .step-card:hover::after{ opacity:1; }
+
+    .info-icon, .service-icon, .step-icon{
+        transition: transform .5s var(--scp-bounce);
+    }
+    .info-card:hover .info-icon,
+    .service-card:hover .service-icon,
+    .step-card:hover .step-icon{ transform: scale(1.15) rotate(-8deg); }
+
+    /* Service card animated underline accent (grow from one side) */
+    .service-card{ overflow:hidden; }
+    .service-card::before{
+        content:""; position:absolute; inset:auto 0 0 0; height:3px;
+        background: var(--card-accent, #072C2C);
+        transform: scaleX(0); transform-origin: right;
+        transition: transform .6s var(--scp-ease);
+    }
+    .service-card:hover::before{ transform: scaleX(1); transform-origin: left; }
+
+    /* Step number — large outlined gradient digit on hover */
+    .step-card .step-num{ transition: transform .45s var(--scp-bounce); }
+    .step-card:hover .step-num{ transform: scale(1.18) rotate(-5deg); }
+
+    /* ========== Affiliation Banner — Glass premium ========== */
+    .affiliation-banner{
+        position: relative;
+        background: linear-gradient(var(--scp-glass-bg), var(--scp-glass-bg)) padding-box,
+                    var(--scp-grad-mix) border-box;
+        border: 1.5px solid transparent;
+        backdrop-filter: blur(12px) saturate(140%);
+        -webkit-backdrop-filter: blur(12px) saturate(140%);
+        transition: transform .55s var(--scp-ease), box-shadow .55s ease;
+    }
+    .affiliation-banner:hover{ transform: translateY(-6px); box-shadow: var(--scp-shadow-hover); }
+    .affiliation-icon{
+        background: var(--scp-grad-primary);
+        color:#fff;
+        transition: transform .6s var(--scp-bounce);
+    }
+    .affiliation-banner:hover .affiliation-icon{ transform: rotate(-12deg) scale(1.12); }
+
+    /* ========== CTA — Premium dark with aurora ========== */
+    .cta-section{
+        position: relative; overflow: hidden; isolation: isolate;
+    }
+    .cta-section::before{
+        content:""; position:absolute; inset:-30%; z-index:-1;
+        background:
+          radial-gradient(40% 35% at 20% 30%, rgba(255,95,3,.30), transparent 60%),
+          radial-gradient(45% 40% at 80% 70%, rgba(30,107,107,.30), transparent 60%);
+        animation: scp-float 14s ease-in-out infinite;
+    }
+    .cta-section .cta-icon{ display:inline-block; animation: scp-float 4.5s ease-in-out infinite; }
+
+    /* ========== Section Title — animated underline ========== */
+    .section-title{ position:relative; display:inline-block; }
+    .section-title::after{
+        content:""; position:absolute; right:50%; bottom:-12px;
+        height:3px; width:0; border-radius:4px;
+        background: var(--scp-grad-accent);
+        transform: translateX(50%);
+        transition: width .9s var(--scp-ease);
+    }
+    .scp-in .section-title::after,
+    .section-header.scp-in .section-title::after{ width:80px; }
+
+    /* ========== Counters chip styling ========== */
+    .scp-stats{
+        display:flex; flex-wrap:wrap; gap:18px; justify-content:center;
+        margin-top: 28px;
+    }
+    .scp-stat{
+        flex: 1 1 170px; max-width: 220px;
+        text-align:center; padding: 18px 14px;
+        background: linear-gradient(var(--scp-glass-bg), var(--scp-glass-bg)) padding-box,
+                    var(--scp-grad-mix) border-box;
+        border: 1.5px solid transparent;
+        border-radius: 18px;
+        backdrop-filter: blur(10px) saturate(140%);
+        -webkit-backdrop-filter: blur(10px) saturate(140%);
+        box-shadow: var(--scp-shadow-soft);
+        transition: transform .4s var(--scp-ease), box-shadow .4s ease;
+    }
+    .scp-stat:hover{ transform: translateY(-6px); box-shadow: var(--scp-shadow-hover); }
+    .scp-stat-num{
+        font-size: 2rem; font-weight: 800; line-height: 1;
+        background-image: var(--scp-grad-primary);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .scp-stat-label{
+        margin-top: 6px; font-size: .9rem; color:#475569; font-weight:600;
+    }
+
+    /* ========== Decorative wavy divider between sections ========== */
+    .scp-divider{
+        height: 60px; width: 100%;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 60'><path fill='%23EDEADE' d='M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z'/></svg>") repeat-x;
+        background-size: 1440px 60px;
+    }
+
+    /* ========== Reduced motion ========== */
+    @@media (prefers-reduced-motion: reduce){
+        .scp-reveal,.scp-reveal-zoom,.scp-reveal-right,.scp-reveal-left{ opacity:1 !important; animation:none !important; }
+        .hero-deco-1,.hero-deco-2,.scp-stars i,.cta-section .cta-icon,
+        .portal-badge,.portal-badge i,.portal-title,
+        .scp-divider,.hero-section::before,.cta-section::before,.logo-circle::before{ animation:none !important; }
+        *{ transition:none !important; }
+    }
+</style>
+
+<!-- ═══════════════════════════════════════
+     HERO — University Branding Bar
+═══════════════════════════════════════ -->
+<section class="hero-section">
+    <div class="hero-deco hero-deco-1"></div>
+    <div class="hero-deco hero-deco-2"></div>
+
+    @* twinkling stars (decorative only) *@
+    <div class="scp-stars" aria-hidden="true">
+        <i style="top:18%; right:12%;"></i>
+        <i style="top:32%; right:78%; animation-delay:1.2s;"></i>
+        <i style="top:65%; right:22%; animation-delay:2.1s;"></i>
+        <i style="top:48%; right:55%; animation-delay:.6s;"></i>
+        <i style="top:80%; right:70%; animation-delay:1.7s;"></i>
+        <i style="top:25%; right:40%; animation-delay:2.6s;"></i>
+    </div>
+
+    <div class="hero-container">
+
+        <!-- Logos Row -->
+        <div class="logos-row">
+
+            <!-- Assiut University -->
+            <div class="logo-col scp-reveal scp-reveal-right scp-d1">
+                <div class="logo-circle scp-tilt">
+                    <img src="~/images/aun-logo.png" alt="شعار جامعة أسيوط" />
+                </div>
+                <div class="logo-label">جامعة أسيوط</div>
+                <div class="logo-sublabel">Assiut University</div>
+            </div>
+
+            <div class="logo-divider scp-reveal scp-reveal-zoom scp-d2"></div>
+
+            <!-- Portal Title -->
+            <div class="portal-title-col scp-reveal scp-d2">
+                <div class="portal-badge">
+                    <i class="fas fa-sun"></i>
+                    الفصل الصيفي
+                </div>
+                <h1 class="portal-title">Summer Courses Portal</h1>
+                <p class="portal-subtitle">بوابة تسجيل طلاب الفصل الصيفي </p>
+            </div>
+
+            <div class="logo-divider scp-reveal scp-reveal-zoom scp-d2"></div>
+
+            <!-- Faculty of Education -->
+            <div class="logo-col scp-reveal scp-reveal-left scp-d1">
+                <div class="logo-circle scp-tilt">
+                    <img src="~/images/edu.jpg" alt="شعار كلية التربية" />
+                </div>
+                <div class="logo-label">كلية التربية</div>
+                <div class="logo-sublabel">Faculty of Education</div>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <p class="hero-desc scp-reveal scp-d3">
+            منصة إلكترونية متكاملة تتيح لطلاب كلية التربية — جامعة أسيوط تسجيل بياناتهم
+            والاستعلام عنها ومتابعة أحدث الإعلانات الخاصة بالفصل الصيفي بكل سهولة وأمان.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="hero-ctas scp-reveal scp-d4">
+            <a asp-area="Student" asp-controller="Register" asp-action="Index" class="btn-hero-primary scp-magnet">
+                <i class="fas fa-user-plus"></i> سجّل الآن
+            </a>
+            <a asp-area="Student" asp-controller="Search" asp-action="Index" class="btn-hero-ghost scp-magnet">
+                <i class="fas fa-search"></i> ابحث عن بياناتك
+            </a>
+        </div>
+
+        @* ====== Animated quick stats (visual only, لا تستدعي الباك إند) ====== *@
+        <div class="scp-stats scp-reveal scp-d5">
+            <div class="scp-stat">
+                <div class="scp-stat-num" data-scp-counter="100" data-scp-suffix="٪">0</div>
+                <div class="scp-stat-label">إلكتروني بالكامل</div>
+            </div>
+            <div class="scp-stat">
+                <div class="scp-stat-num" data-scp-counter="24" data-scp-suffix="/7">0</div>
+                <div class="scp-stat-label">متاح طوال الوقت</div>
+            </div>
+            <div class="scp-stat">
+                <div class="scp-stat-num" data-scp-counter="4" data-scp-suffix=" خطوات">0</div>
+                <div class="scp-stat-label">سهل وسريع</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wave -->
+    <div class="hero-wave">
+        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,40 C360,80 1080,0 1440,40 L1440,60 L0,60 Z" fill="#EDEADE" />
+        </svg>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     ABOUT — What is this portal?
+═══════════════════════════════════════ -->
+<section class="about-section">
+    <div class="section-container">
+
+        <!-- Section Header -->
+        <div class="section-header scp-reveal">
+            <div class="section-badge badge-primary">
+                <i class="fas fa-info-circle"></i> عن المنصة
+            </div>
+            <h2 class="section-title">ما هي Summer Courses Portal؟</h2>
+            <p class="section-desc">
+                منصة رقمية متخصصة أطلقتها كلية التربية — جامعة أسيوط لتيسير إجراءات تسجيل الفصل الصيفي
+            </p>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="info-grid">
+            <div class="info-card scp-reveal scp-d1 scp-spotlight">
+                <div class="info-icon" style="background:var(--color-primary)">
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <h3 class="info-title">الهدف من المنصة</h3>
+                <p class="info-body">توفير نظام إلكتروني موحد وآمن يُمكّن الطلاب من تسجيل بياناتهم للفصل الصيفي بدلاً من الإجراءات الورقية التقليدية، مما يوفر الوقت ويقلل من الأخطاء.</p>
+            </div>
+            <div class="info-card scp-reveal scp-d2 scp-spotlight">
+                <div class="info-icon" style="background:#1e6b6b">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3 class="info-title">الفئة المستهدفة</h3>
+                <p class="info-body">جميع طلاب كلية التربية — جامعة أسيوط الراغبين في الالتحاق بمقررات الفصل الصيفي، بما يشمل طلاب جميع الأقسام والمستويات الدراسية.</p>
+            </div>
+            <div class="info-card scp-reveal scp-d3 scp-spotlight">
+                <div class="info-icon" style="background:var(--color-secondary)">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="info-title">الأمان والموثوقية</h3>
+                <p class="info-body">تعتمد المنصة على معايير أمان عالية لحماية بيانات الطلاب، مع واجهة سهلة الاستخدام تضمن تجربة سلسة وموثوقة في جميع الأوقات.</p>
+            </div>
+        </div>
+
+        <!-- Affiliation Banner -->
+        <div class="affiliation-banner scp-reveal scp-reveal-zoom scp-d2">
+            <div class="affiliation-info">
+                <div class="affiliation-icon"><i class="fas fa-landmark"></i></div>
+                <div>
+                    <div class="affiliation-title">تحت إشراف كلية التربية</div>
+                    <div class="affiliation-sub">جامعة أسيوط — جمهورية مصر العربية</div>
+                </div>
+            </div>
+            <div class="affiliation-links">
+                <a href="https://b.aun.edu.eg/main/" target="_blank" rel="noopener noreferrer" class="btn-affil-ghost">
+                    <i class="fas fa-external-link-alt"></i> جامعة أسيوط
+                </a>
+                <a href="https://b.aun.edu.eg/education/" target="_blank" rel="noopener noreferrer" class="btn-affil-primary">
+                    <i class="fas fa-external-link-alt"></i> كلية التربية
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* فاصل زخرفي متموج بين الأقسام *@
+<div class="scp-divider" aria-hidden="true"></div>
+
+<!-- ═══════════════════════════════════════
+     SERVICES — Site Sections
+═══════════════════════════════════════ -->
+<section class="services-section">
+    <div class="section-container">
+
+        <div class="section-header scp-reveal">
+            <div class="section-badge badge-secondary">
+                <i class="fas fa-th-large"></i> خدمات المنصة
+            </div>
+            <h2 class="section-title">أقسام المنصة</h2>
+            <p class="section-desc">كل ما تحتاجه في مكان واحد — من التسجيل حتى متابعة الأخبار</p>
+        </div>
+
+        <div class="services-grid">
+
+            <div class="service-card scp-reveal scp-d1 scp-spotlight scp-tilt" style="--card-accent: var(--color-primary)">
+                <div class="service-icon" style="background:rgba(7,44,44,0.07); color:var(--color-primary)">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <span class="service-badge" style="background:rgba(7,44,44,0.07); color:var(--color-primary)">تسجيل جديد</span>
+                <h3 class="service-title">تسجيل البيانات</h3>
+                <p class="service-desc">سجّل بياناتك الشخصية ومعلومات الفصل الصيفي بسهولة من خلال نموذج بسيط وواضح يستغرق دقائق فقط.</p>
+                <a asp-area="Student" asp-controller="Register" asp-action="Index"
+                   class="service-btn" style="background:var(--color-primary)">
+                    سجّل الآن <i class="fas fa-arrow-left"></i>
+                </a>
+            </div>
+
+            <div class="service-card scp-reveal scp-d2 scp-spotlight scp-tilt" style="--card-accent: #1e6b6b">
+                <div class="service-icon" style="background:rgba(30,107,107,0.07); color:#1e6b6b">
+                    <i class="fas fa-search"></i>
+                </div>
+                <span class="service-badge" style="background:rgba(30,107,107,0.07); color:#1e6b6b">بحث</span>
+                <h3 class="service-title">البحث عن البيانات</h3>
+                <p class="service-desc">ابحث عن بياناتك المسجلة باستخدام رقمك القومي والاطلاع على تفاصيل تسجيلك بأمان تام.</p>
+                <a asp-area="Student" asp-controller="Search" asp-action="Index"
+                   class="service-btn" style="background:#1e6b6b">
+                    ابحث الآن <i class="fas fa-search"></i>
+                </a>
+            </div>
+
+            <div class="service-card scp-reveal scp-d3 scp-spotlight scp-tilt" style="--card-accent: var(--color-warning)">
+                <div class="service-icon" style="background:rgba(217,119,6,0.07); color:var(--color-warning)">
+                    <i class="fas fa-edit"></i>
+                </div>
+                <span class="service-badge" style="background:rgba(217,119,6,0.07); color:var(--color-warning)">تعديل</span>
+                <h3 class="service-title">تعديل البيانات</h3>
+                <p class="service-desc">يمكنك مراجعة بياناتك وتعديلها في أي وقت من خلال صفحة البحث لضمان صحة المعلومات المسجلة.</p>
+                <a asp-area="Student" asp-controller="Search" asp-action="Index"
+                   class="service-btn" style="background:var(--color-warning)">
+                    عدّل بياناتك <i class="fas fa-edit"></i>
+                </a>
+            </div>
+
+            <div class="service-card scp-reveal scp-d4 scp-spotlight scp-tilt" style="--card-accent: var(--color-secondary)">
+                <div class="service-icon" style="background:rgba(255,95,3,0.07); color:var(--color-secondary)">
+                    <i class="fas fa-newspaper"></i>
+                </div>
+                <span class="service-badge" style="background:rgba(255,95,3,0.07); color:var(--color-secondary)">أخبار</span>
+                <h3 class="service-title">آخر الأخبار</h3>
+                <p class="service-desc">تابع أحدث الإعلانات والأخبار المتعلقة بالفصل الصيفي والمستجدات الخاصة بكلية التربية.</p>
+                <a asp-area="Student" asp-controller="News" asp-action="Index"
+                   class="service-btn" style="background:var(--color-secondary)">
+                    تصفح الأخبار <i class="fas fa-newspaper"></i>
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     HOW IT WORKS — Steps
+═══════════════════════════════════════ -->
+<section class="steps-section">
+    <div class="section-container">
+        <div class="section-header scp-reveal">
+            <div class="section-badge badge-primary">
+                <i class="fas fa-list-ol"></i> كيف تستخدم المنصة؟
+            </div>
+            <h2 class="section-title">خطوات التسجيل</h2>
+            <p class="section-desc">أتمّ تسجيلك في الفصل الصيفي في أربع خطوات بسيطة</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card scp-reveal scp-d1 scp-spotlight">
+                <div class="step-num">1</div>
+                <div class="step-icon"><i class="fas fa-user-circle"></i></div>
+                <div class="step-code">01</div>
+                <h4 class="step-title">أدخل بياناتك</h4>
+                <p class="step-desc">اذهب إلى صفحة التسجيل وأدخل بياناتك الشخصية وبيانات الدراسة بدقة.</p>
+            </div>
+            <div class="step-card scp-reveal scp-d2 scp-spotlight">
+                <div class="step-num">2</div>
+                <div class="step-icon"><i class="fas fa-file-alt"></i></div>
+                <div class="step-code">02</div>
+                <h4 class="step-title">راجع المعلومات</h4>
+                <p class="step-desc">تأكد من صحة جميع البيانات المُدخلة قبل الإرسال النهائي.</p>
+            </div>
+            <div class="step-card scp-reveal scp-d3 scp-spotlight">
+                <div class="step-num">3</div>
+                <div class="step-icon"><i class="fas fa-paper-plane"></i></div>
+                <div class="step-code">03</div>
+                <h4 class="step-title">أرسل الطلب</h4>
+                <p class="step-desc">اضغط على زر التسجيل لإرسال بياناتك وحفظها في قاعدة البيانات.</p>
+            </div>
+            <div class="step-card scp-reveal scp-d4 scp-spotlight">
+                <div class="step-num">4</div>
+                <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="step-code">04</div>
+                <h4 class="step-title">تابع حالتك</h4>
+                <p class="step-desc">استخدم البحث برقمك القومي للاطلاع على بياناتك وتعديلها عند الحاجة.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     BOTTOM CTA
+═══════════════════════════════════════ -->
+<section class="cta-section scp-reveal scp-reveal-zoom">
+    <i class="fas fa-graduation-cap cta-icon"></i>
+    <h2 class="cta-title">جاهز للتسجيل في الفصل الصيفي؟</h2>
+    <p class="cta-desc">
+        لا تفوّت الفرصة — سجّل بياناتك الآن وضمن مكانك في الفصل الصيفي لكلية التربية، جامعة أسيوط
+    </p>
+    <a asp-area="Student" asp-controller="Register" asp-action="Index" class="btn-cta scp-magnet">
+        <i class="fas fa-user-plus"></i> سجّل بياناتك الآن
+    </a>
+</section>
+
+@*
+    ═══════════════════════════════════════════════════════════════
+      Vanilla JS — لا يستخدم eval ولا innerHTML على بيانات خارجية.
+      • IntersectionObserver لظهور العناصر.
+      • Counter animation للأرقام.
+      • Spotlight (mousemove) على البطاقات.
+      • Magnetic effect خفيف على الأزرار.
+      • يحترم prefers-reduced-motion.
+    ═══════════════════════════════════════════════════════════════
+*@
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            var prefersReduced = window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // 1) Reveal on scroll
+            var revealTargets = document.querySelectorAll('.scp-reveal, .scp-reveal-zoom, .scp-reveal-right, .scp-reveal-left');
+            if (prefersReduced || !('IntersectionObserver' in window)) {
+                revealTargets.forEach(function (el) { el.classList.add('scp-in'); });
+            } else {
+                var io = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('scp-in');
+                            io.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+                revealTargets.forEach(function (el) { io.observe(el); });
+            }
+
+            // 2) Counter animation (آمن: textContent فقط)
+            var counters = document.querySelectorAll('[data-scp-counter]');
+            function animateCount(el) {
+                var target = parseInt(el.getAttribute('data-scp-counter'), 10) || 0;
+                var suffix = el.getAttribute('data-scp-suffix') || '';
+                var duration = 1400;
+                var startTs = null;
+                function step(ts) {
+                    if (!startTs) startTs = ts;
+                    var p = Math.min((ts - startTs) / duration, 1);
+                    var eased = 1 - Math.pow(1 - p, 3);
+                    el.textContent = Math.round(target * eased) + suffix;
+                    if (p < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            }
+            if (prefersReduced) {
+                counters.forEach(function (el) {
+                    el.textContent = el.getAttribute('data-scp-counter') + (el.getAttribute('data-scp-suffix') || '');
+                });
+            } else if ('IntersectionObserver' in window) {
+                var ioCount = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            animateCount(entry.target);
+                            ioCount.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.4 });
+                counters.forEach(function (el) { ioCount.observe(el); });
+            } else {
+                counters.forEach(animateCount);
+            }
+
+            // 3) Spotlight follow on cards
+            if (!prefersReduced) {
+                var spots = document.querySelectorAll('.scp-spotlight');
+                spots.forEach(function (card) {
+                    card.addEventListener('mousemove', function (e) {
+                        var r = card.getBoundingClientRect();
+                        var x = ((e.clientX - r.left) / r.width) * 100;
+                        var y = ((e.clientY - r.top) / r.height) * 100;
+                        card.style.setProperty('--mx', x + '%');
+                        card.style.setProperty('--my', y + '%');
+                    });
+                });
+            }
+
+            // 4) Tilt 3D خفيف
+            if (!prefersReduced) {
+                var tilts = document.querySelectorAll('.scp-tilt');
+                tilts.forEach(function (el) {
+                    el.addEventListener('mousemove', function (e) {
+                        var r = el.getBoundingClientRect();
+                        var px = (e.clientX - r.left) / r.width  - 0.5;
+                        var py = (e.clientY - r.top)  / r.height - 0.5;
+                        var max = 6; // درجات
+                        el.style.transform = 'perspective(700px) rotateX(' + (-py * max) + 'deg) rotateY(' + (px * max) + 'deg) translateY(-6px)';
+                    });
+                    el.addEventListener('mouseleave', function () {
+                        el.style.transform = '';
+                    });
+                });
+            }
+
+            // 5) Magnetic buttons (انجذاب خفيف للمؤشر)
+            if (!prefersReduced && window.matchMedia('(pointer:fine)').matches) {
+                var magnets = document.querySelectorAll('.scp-magnet');
+                magnets.forEach(function (btn) {
+                    btn.addEventListener('mousemove', function (e) {
+                        var r = btn.getBoundingClientRect();
+                        var x = e.clientX - r.left - r.width / 2;
+                        var y = e.clientY - r.top  - r.height / 2;
+                        btn.style.transform = 'translate(' + (x * 0.15) + 'px,' + (y * 0.2) + 'px)';
+                    });
+                    btn.addEventListener('mouseleave', function () {
+                        btn.style.transform = '';
+                    });
+                });
+            }
+        })();
+    </script>
+}

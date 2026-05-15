@@ -1,0 +1,293 @@
+﻿@model WebApplication1.ViewModels.Student.StudentEditViewModel
+@{
+    ViewData["Title"] = "تعديل البيانات";
+}
+
+<!-- ========= Embedded CSS - Enterprise Design System ========= -->
+<style>
+    /* Design Tokens - Matching Layout */
+    :root {
+        --primary: #072C2C; --primary-hover: #0a3d3d;
+        --secondary: #FF5F03; --secondary-hover: #e55400;
+        --surface: #ffffff; --surface-alt: #f8fafc;
+        --text: #111827; --text-muted: #6B7280;
+        --border: #D1D5DB; --error: #DC2626;
+        --shadow: 0 4px 20px rgba(7, 44, 44, 0.12);
+        --shadow-lg: 0 8px 30px rgba(7, 44, 44, 0.2);
+        --radius: 12px; --radius-lg: 16px;
+        --transition: all 0.25s ease;
+    }
+
+    /* Animations */
+    @@keyframes slideUp {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-enterprise { animation: slideUp 0.4s ease-out both; }
+    .delay-1 { animation-delay: 0.1s; } .delay-2 { animation-delay: 0.2s; }
+
+    /* Page Header */
+    .page-header-enterprise {
+        background: linear-gradient(135deg, var(--primary), #0d4a4a);
+        padding: 2.5rem 1rem;
+        border-bottom: 4px solid var(--secondary);
+        margin-bottom: 2rem;
+        color: white;
+        text-align: center;
+    }
+    .header-icon-enterprise {
+        width: 64px; height: 64px;
+        background: linear-gradient(135deg, var(--secondary), #ff8c42);
+        border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;
+        font-size: 28px; color: white; margin-bottom: 1rem;
+        box-shadow: 0 4px 14px rgba(255, 95, 3, 0.4);
+    }
+    .header-title-enterprise {
+        font-family: 'Oswald', sans-serif; font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; color: white;
+    }
+    .header-subtitle-enterprise {
+        font-size: 1rem; opacity: 0.85; font-weight: 300; color: rgba(255,255,255,0.9); margin: 0;
+    }
+
+    /* Card */
+    .card-enterprise {
+        background: var(--surface); border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg); border: 1px solid rgba(7, 44, 44, 0.08);
+    }
+
+    /* Steps */
+    .step-header-enterprise { display: flex; align-items: center; gap: 12px; }
+    .step-badge-enterprise {
+        width: 32px; height: 32px; background: var(--primary); color: white;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 1rem; flex-shrink: 0;
+    }
+    .step-title-enterprise {
+        font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 600;
+        color: var(--primary); margin: 0;
+    }
+
+    /* Form Elements */
+    .form-label-enterprise {
+        display: flex; align-items: center; gap: 6px; font-weight: 500;
+        font-size: 0.95rem; color: var(--text); margin-bottom: 0.5rem;
+    }
+    .form-label-enterprise i { color: var(--primary); font-size: 0.9rem; width: 16px; text-align: center; }
+
+    .form-control-enterprise, .form-select-enterprise {
+        width: 100%; padding: 0.75rem 1rem; font-family: 'Ubuntu', sans-serif;
+        font-size: 1rem; color: var(--text); background: var(--surface-alt);
+        border: 2px solid var(--border); border-radius: var(--radius); transition: var(--transition);
+    }
+    .form-control-enterprise:focus, .form-select-enterprise:focus {
+        outline: none; border-color: var(--secondary); background: white;
+        box-shadow: 0 0 0 4px rgba(255, 95, 3, 0.15);
+    }
+
+    .divider-enterprise { border: none; border-top: 1px dashed var(--border); margin: 2rem 0; }
+
+    /* Buttons */
+    .btn-primary-enterprise {
+        background: var(--secondary); color: white; border: none; border-radius: 50px;
+        font-family: 'Ubuntu', sans-serif; font-weight: 500; font-size: 1rem;
+        padding: 0.875rem 1.75rem; transition: var(--transition);
+        box-shadow: 0 4px 14px rgba(255, 95, 3, 0.35); cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;
+    }
+    .btn-primary-enterprise:hover {
+        background: var(--secondary-hover); transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 95, 3, 0.5); color: white;
+    }
+    .btn-secondary-enterprise {
+        background: white; color: var(--primary); border: 2px solid var(--primary);
+        border-radius: 50px; font-family: 'Ubuntu', sans-serif; font-weight: 500; font-size: 0.95rem;
+        padding: 0.75rem 1.5rem; transition: var(--transition); cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;
+    }
+    .btn-secondary-enterprise:hover {
+        background: var(--primary); color: white; transform: translateY(-2px);
+    }
+
+    /* Responsive & Accessibility */
+    @@media (max-width: 768px) {
+        .page-header-enterprise { padding: 2rem 1rem; }
+        .header-title-enterprise { font-size: 1.5rem; }
+        .header-icon-enterprise { width: 56px; height: 56px; font-size: 24px; }
+    }
+    @@media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+    .form-control-enterprise:focus, .btn-primary-enterprise:focus, .btn-secondary-enterprise:focus {
+        outline: 2px solid var(--secondary); outline-offset: 2px;
+    }
+</style>
+
+<!-- ========= Page Content ========= -->
+
+<!-- Page Header -->
+<section class="page-header-enterprise animate-enterprise">
+    <div class="container">
+        <div class="header-icon-enterprise"><i class="fas fa-pen-to-square"></i></div>
+        <h1 class="header-title-enterprise">تعديل البيانات</h1>
+        <p class="header-subtitle-enterprise">يمكنك تعديل بياناتك المسجلة من هنا</p>
+    </div>
+</section>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-enterprise p-4 p-lg-5 animate-enterprise delay-1">
+                <form asp-area="Student" asp-controller="Edit" asp-action="Index" method="post" id="editForm">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Step 1: البيانات الشخصية -->
+                    <div class="step-header-enterprise mb-4">
+                        <div class="step-badge-enterprise me-3">1</div>
+                        <div><h5 class="step-title-enterprise">البيانات الشخصية</h5></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="FullName" class="form-label-enterprise">
+                            <i class="fas fa-user"></i> الاسم الكامل <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="FullName" class="form-control-enterprise" placeholder="أدخل اسمك الكامل" />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+
+                    <hr class="divider-enterprise" />
+
+                    <!-- Step 2: المستوى والشعبة -->
+                    <div class="step-header-enterprise mb-4">
+                        <div class="step-badge-enterprise me-3">2</div>
+                        <div><h5 class="step-title-enterprise">المستوى والشعبة</h5></div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="LevelId" class="form-label-enterprise">
+                                <i class="fas fa-layer-group"></i> المستوى
+                            </label>
+                            <select asp-for="LevelId" class="form-select-enterprise">
+                                <option value="">-- اختر المستوى --</option>
+                                @foreach (var level in Model.Levels) { <option value="@level.Id">@level.Name</option> }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DivisionId" class="form-label-enterprise">
+                                <i class="fas fa-users"></i> الشعبة / القسم
+                            </label>
+                            <select asp-for="DivisionId" class="form-select-enterprise">
+                                <option value="">-- اختر الشعبة --</option>
+                                @foreach (var division in Model.Divisions) { <option value="@division.Id">@division.Name</option> }
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr class="divider-enterprise" />
+
+                    <!-- Step 3: المواد -->
+                    <div class="step-header-enterprise mb-4">
+                        <div class="step-badge-enterprise me-3">3</div>
+                        <div><h5 class="step-title-enterprise">المواد الدراسية</h5></div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="SubjectCount" class="form-label-enterprise">عدد المواد</label>
+                            <select asp-for="SubjectCount" class="form-select-enterprise" id="subjectCount">
+                                <option value="1">مادة واحدة</option>
+                                <option value="2">مادتان</option>
+                                <option value="3">ثلاث مواد</option>
+                                <option value="4">أربع مواد</option>
+                                <option value="5">خمس مواد</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <div id="subjectsContainer">
+                                <div id="subject1Box" class="mb-3">
+                                    <label asp-for="Subject1" class="form-label-enterprise">
+                                        المادة الأولى <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="Subject1" class="form-control-enterprise" placeholder="أدخل اسم المادة الأولى" />
+                                </div>
+                                <div id="subject2Box" class="mb-3">
+                                    <label asp-for="Subject2" class="form-label-enterprise">المادة الثانية</label>
+                                    <input asp-for="Subject2" class="form-control-enterprise" placeholder="أدخل اسم المادة الثانية" />
+                                </div>
+                                <div id="subject3Box">
+                                    <label asp-for="Subject3" class="form-label-enterprise">المادة الثالثة</label>
+                                    <input asp-for="Subject3" class="form-control-enterprise" placeholder="أدخل اسم المادة الثالثة" />
+                                </div>
+                                <div id="subject4Box">
+                                    <label asp-for="Subject4" class="form-label-enterprise">المادة الرابعة</label>
+                                    <input asp-for="Subject4" class="form-control-enterprise" placeholder="أدخل اسم المادة الرابعة" />
+                                </div>
+                                <div id="subject5Box">
+                                    <label asp-for="Subject5" class="form-label-enterprise">المادة الخامسة</label>
+                                    <input asp-for="Subject5" class="form-control-enterprise" placeholder="أدخل اسم المادة الخامسة" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-3 justify-content-center mt-5 flex-wrap">
+                        <button type="submit" class="btn-primary-enterprise px-5 py-3">
+                            <i class="fas fa-save"></i> حفظ التعديلات
+                        </button>
+                        <a asp-area="Student" asp-controller="Search" asp-action="Index" class="btn-secondary-enterprise">
+                            <i class="fas fa-times"></i> إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── تعريف المصفوفات لربط العناصر بالترتيب الصحيح ──
+        // نبدأ من index 1 ليتوافق مع منطق الكود الأصلي (المادة الأولى ظاهرة دائماً)
+        const boxes = [
+            null,                   // index 0 فارغ
+            document.getElementById('subject2Box'),  // index 1 -> المادة الثانية
+            document.getElementById('subject3Box'),  // index 2 -> المادة الثالثة
+            document.getElementById('subject4Box'),  // index 3 -> المادة الرابعة
+            document.getElementById('subject5Box')   // index 4 -> المادة الخامسة
+        ];
+
+        const inputs = [
+            null,                   // index 0 فارغ
+            document.querySelector('input[name="Subject2"]'),
+            document.querySelector('input[name="Subject3"]'),
+            document.querySelector('input[name="Subject4"]'),
+            document.querySelector('input[name="Subject5"]')
+        ];
+
+        const subjectCount = document.getElementById('subjectCount');
+
+        function updateSubjects() {
+            const count = parseInt(subjectCount.value);
+
+            // حلقة تكرارية من 1 إلى 4 (لأننا نتحكم في المواد من 2 إلى 5)
+            for (let i = 1; i <= 4; i++) {
+                // إذا كان الرقم المختار أكبر من المؤشر الحالي، نظهر العنصر
+                // مثال: لو اخترت 3 مواد، نظهر (المؤشر 1->مادة2، المؤشر 2->مادة3) ونخفي الباقي
+                if (i < count) {
+                    if(boxes[i]) boxes[i].style.display = 'block';
+                } else {
+                    if(boxes[i]) boxes[i].style.display = 'none';
+                    // تفريغ الحقل عند الإخفاء لمنع إرسال بيانات غير مطلوبة
+                    if (inputs[i]) inputs[i].value = '';
+                }
+            }
+        }
+
+        // تشغيل الدالة عند تغيير القائمة وعند تحميل الصفحة
+        if(subjectCount) {
+            subjectCount.addEventListener('change', updateSubjects);
+            updateSubjects(); 
+        }
+    </script>
+}

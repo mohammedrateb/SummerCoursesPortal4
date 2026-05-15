@@ -1,0 +1,565 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      Search/Details.cshtml — نسخة محسّنة بالكامل
+      • نفس design tokens بتاع الـ Layout (#072C2C / #FF5F03).
+      • Glassmorphism + Aurora + Shimmer + Pulse للـ unpaid badge.
+      • أيقونات Font Awesome 6 Free فقط (شيلت wallet-check/wallet-xmark Pro).
+      • subject-badge بـ class صريح (sd-sb-1 .. sd-sb-5) بدل nth-child الهش.
+      • شيلت onclick inline → addEventListener (آمن مع CSP).
+      • SweetAlert يستخدم title/text كنصوص فقط (مش HTML) → آمن من XSS.
+      • Class prefix: sd-* (Search Details).
+      • صفر تعديل Backend / كل asp-* و AntiForgeryToken محفوظة.
+      • يحترم prefers-reduced-motion.
+    ═══════════════════════════════════════════════════════════════
+*@
+@model WebApplication1.ViewModels.Student.StudentDetailsViewModel
+@{
+    ViewData["Title"] = "نتيجة البحث";
+}
+
+<style>
+    /* ================= Design Tokens ================= */
+    .sd-scope{
+        --sd-primary: #072C2C;
+        --sd-primary-2: #1e6b6b;
+        --sd-secondary: #FF5F03;
+        --sd-secondary-2: #ffb060;
+        --sd-success: #16A34A;
+        --sd-success-2: #22c55e;
+        --sd-error: #DC2626;
+        --sd-error-2: #b91c1c;
+        --sd-warning: #D97706;
+        --sd-warning-2: #b45309;
+        --sd-purple: #6D28D9;
+        --sd-text: #111827;
+        --sd-muted: #6B7280;
+        --sd-border: #D1D5DB;
+        --sd-surface: #ffffff;
+        --sd-surface-alt: #f8fafc;
+        --sd-glass-bg: rgba(255,255,255,.78);
+        --sd-glass-border: rgba(255,255,255,.65);
+        --sd-shadow: 0 10px 30px -16px rgba(7,44,44,.25);
+        --sd-shadow-lg: 0 24px 60px -22px rgba(7,44,44,.35);
+        --sd-radius: 14px;
+        --sd-radius-lg: 20px;
+        --sd-ease: cubic-bezier(.22,.61,.36,1);
+        --sd-bounce: cubic-bezier(.34,1.56,.64,1);
+        --sd-grad-primary: linear-gradient(135deg,#072C2C 0%,#1e6b6b 100%);
+        --sd-grad-accent:  linear-gradient(135deg,#FF5F03 0%,#ffb060 100%);
+        --sd-grad-success: linear-gradient(135deg,#16A34A 0%,#22c55e 100%);
+        --sd-grad-error:   linear-gradient(135deg,#DC2626 0%,#b91c1c 100%);
+        --sd-grad-mix:     linear-gradient(120deg,#072C2C,#1e6b6b 40%,#FF5F03);
+    }
+
+    /* ================= Animations ================= */
+    @@keyframes sd-slideUp{
+        from{ opacity:0; transform:translateY(18px); }
+        to  { opacity:1; transform:translateY(0); }
+    }
+    @@keyframes sd-fadeIn{
+        from{ opacity:0; } to{ opacity:1; }
+    }
+    @@keyframes sd-pulseRing{
+        0%  { box-shadow: 0 0 0 0 rgba(220,38,38,.55); }
+        70% { box-shadow: 0 0 0 14px rgba(220,38,38,0); }
+        100%{ box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+    }
+    @@keyframes sd-pulseRingOk{
+        0%  { box-shadow: 0 0 0 0 rgba(22,163,74,.55); }
+        70% { box-shadow: 0 0 0 14px rgba(22,163,74,0); }
+        100%{ box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+    }
+    @@keyframes sd-shine{
+        0%  { transform: translateX(-100%); }
+        60% { transform: translateX(100%); }
+        100%{ transform: translateX(100%); }
+    }
+    @@keyframes sd-floatY{
+        0%,100%{ transform: translateY(0); }
+        50%   { transform: translateY(-6px); }
+    }
+    @@keyframes sd-spinSlow{
+        from{ transform: rotate(0deg); }
+        to  { transform: rotate(360deg); }
+    }
+
+    .sd-anim       { animation: sd-slideUp .55s var(--sd-ease) both; }
+    .sd-anim-fade  { animation: sd-fadeIn  .6s var(--sd-ease) both; }
+    .sd-d1{ animation-delay:.10s } .sd-d2{ animation-delay:.20s }
+    .sd-d3{ animation-delay:.30s } .sd-d4{ animation-delay:.40s }
+    .sd-d5{ animation-delay:.50s } .sd-d6{ animation-delay:.60s }
+
+    /* ================= Page Header (with Aurora) ================= */
+    .sd-header{
+        position: relative; isolation: isolate; overflow: hidden;
+        padding: 3rem 1rem 3.25rem;
+        margin-bottom: 2rem;
+        color: #fff; text-align: center;
+        background:
+          radial-gradient(60% 80% at 80% 0%, rgba(255,95,3,.22), transparent 60%),
+          radial-gradient(60% 80% at 10% 100%, rgba(30,107,107,.30), transparent 60%),
+          linear-gradient(160deg, #051d1d 0%, #072C2C 60%, #0a3a3a 100%);
+        border-bottom: 4px solid var(--sd-secondary);
+    }
+    .sd-header::before{
+        content:""; position:absolute; inset:0; pointer-events:none; z-index:-1;
+        background-image:
+          linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 75%);
+        -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 75%);
+    }
+    .sd-header::after{
+        content:""; position:absolute; left:0; right:0; bottom:-1px; height:50px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 60' preserveAspectRatio='none'><path fill='%23f8fafc' d='M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z'/></svg>") no-repeat top center / cover;
+        pointer-events:none;
+    }
+
+    .sd-header-icon{
+        width: 78px; height: 78px;
+        background: var(--sd-grad-success);
+        border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 32px; color: #fff;
+        margin-bottom: 1rem;
+        box-shadow: 0 14px 30px -8px rgba(22,163,74,.55);
+        position: relative;
+        animation: sd-pulseRingOk 2.4s ease-out infinite;
+    }
+    .sd-header-icon::after{
+        content:""; position:absolute; inset:0; border-radius:50%;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.5) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: sd-shine 3.5s ease-in-out infinite;
+    }
+    .sd-header-title{
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+        font-weight: 700; margin: 0; color:#fff; letter-spacing:.3px;
+    }
+    .sd-header-sub{
+        margin-top: .5rem; color: rgba(255,255,255,.78);
+        font-size: .95rem; font-weight: 600;
+    }
+
+    /* ================= Detail Card (Glass) ================= */
+    .sd-card{
+        position: relative;
+        background: var(--sd-glass-bg);
+        backdrop-filter: blur(14px) saturate(150%);
+        -webkit-backdrop-filter: blur(14px) saturate(150%);
+        border-radius: var(--sd-radius-lg);
+        box-shadow: var(--sd-shadow-lg);
+        border: 1px solid var(--sd-glass-border);
+        padding: 2.5rem; overflow: hidden;
+    }
+    .sd-card::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:4px;
+        background: var(--sd-grad-mix); opacity:.85;
+    }
+    @@media (max-width: 992px){ .sd-card{ padding: 2rem; } }
+    @@media (max-width: 576px){ .sd-card{ padding: 1.4rem; } }
+
+    /* ================= Profile ================= */
+    .sd-avatar{
+        width: 96px; height: 96px;
+        background: var(--sd-grad-primary);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2.2rem; color: #fff;
+        margin: 0 auto 1rem;
+        box-shadow: 0 14px 30px -10px rgba(7,44,44,.55);
+        position: relative; isolation: isolate;
+        animation: sd-floatY 4s ease-in-out infinite;
+    }
+    .sd-avatar::before{
+        content:""; position:absolute; inset:-3px; border-radius:50%;
+        background: conic-gradient(from 0deg, var(--sd-secondary), var(--sd-primary-2), var(--sd-secondary));
+        z-index:-1; opacity:.55;
+        animation: sd-spinSlow 8s linear infinite;
+    }
+    .sd-avatar::after{
+        content:""; position:absolute; inset:0; border-radius:50%;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.5) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: sd-shine 4s ease-in-out infinite;
+    }
+    .sd-name{
+        font-family: 'Oswald', sans-serif;
+        font-size: 1.65rem; font-weight: 700;
+        margin: .25rem 0 .9rem;
+        background-image: var(--sd-grad-mix);
+        background-size: 220% auto;
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Payment badge */
+    .sd-pay{
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: .55rem 1.1rem; border-radius: 50px;
+        font-weight: 700; font-size: .95rem; color:#fff;
+        box-shadow: 0 6px 16px rgba(0,0,0,.18);
+    }
+    .sd-pay i{ font-size:.95rem; }
+    .sd-pay-paid  { background: var(--sd-grad-success); animation: sd-pulseRingOk 2.6s ease-out infinite; }
+    .sd-pay-unpaid{ background: var(--sd-grad-error);   animation: sd-pulseRing   2.2s ease-out infinite; }
+
+    /* ================= Divider ================= */
+    .sd-divider{
+        position: relative;
+        border: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(7,44,44,.18), transparent);
+        margin: 1.75rem 0;
+    }
+    .sd-divider::after{
+        content: "\f005"; /* star */
+        font-family: "Font Awesome 6 Free"; font-weight: 900;
+        position: absolute; left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--sd-surface);
+        color: var(--sd-secondary);
+        padding: 0 12px;
+        font-size: .8rem;
+    }
+
+    /* ================= Info Boxes ================= */
+    .sd-info{
+        background: rgba(248,250,252,.85);
+        border: 1px solid rgba(209,213,219,.7);
+        border-radius: var(--sd-radius);
+        padding: 1rem 1.1rem;
+        display: flex; align-items: center; gap: 12px;
+        transition: transform .35s var(--sd-ease), box-shadow .35s ease, border-color .35s ease, background .35s ease;
+        height: 100%;
+        position: relative; overflow: hidden;
+    }
+    .sd-info::before{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(135deg, rgba(7,44,44,.04), rgba(255,95,3,.06));
+        opacity:0; transition: opacity .35s ease;
+    }
+    .sd-info > *{ position: relative; z-index: 1; }
+    .sd-info:hover{
+        transform: translateY(-3px);
+        border-color: var(--sd-secondary);
+        box-shadow: 0 14px 28px -16px rgba(255,95,3,.35);
+        background: #fff;
+    }
+    .sd-info:hover::before{ opacity:1; }
+
+    .sd-info-icon{
+        width: 44px; height: 44px;
+        background: rgba(7,44,44,.08);
+        color: var(--sd-primary);
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.05rem; flex-shrink: 0;
+        transition: transform .4s var(--sd-bounce), background .35s ease, color .35s ease;
+    }
+    .sd-info:hover .sd-info-icon{
+        transform: rotate(-8deg) scale(1.08);
+        background: var(--sd-grad-accent);
+        color: #fff;
+    }
+    .sd-info-label{
+        font-size: .82rem; color: var(--sd-muted);
+        display: block; font-weight: 600;
+    }
+    .sd-info-value{
+        font-size: 1rem; font-weight: 700; color: var(--sd-text);
+        margin: 2px 0 0; direction: ltr; text-align: left;
+    }
+    .sd-info-value.is-rtl{ direction: rtl; text-align: right; }
+
+    /* ================= Subjects ================= */
+    .sd-subjects-title{
+        font-family: 'Oswald', sans-serif;
+        font-size: 1.1rem; font-weight: 700;
+        color: var(--sd-primary);
+        margin: 0 0 .9rem;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .sd-subjects-title i{
+        width: 32px; height: 32px; border-radius: 10px;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--sd-grad-accent); color:#fff; font-size:.9rem;
+        box-shadow: 0 6px 14px -6px rgba(255,95,3,.5);
+    }
+    .sd-sb{
+        color:#fff;
+        padding: .55rem 1.1rem;
+        border-radius: 50px;
+        font-weight: 600; font-size: .9rem;
+        box-shadow: 0 6px 14px -6px rgba(0,0,0,.35);
+        position: relative; overflow: hidden; isolation: isolate;
+        transition: transform .35s var(--sd-ease), box-shadow .35s ease;
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .sd-sb::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+        transform: translateX(-100%); transition: transform .8s ease;
+    }
+    .sd-sb:hover{ transform: translateY(-3px); box-shadow: 0 12px 22px -8px rgba(0,0,0,.4); }
+    .sd-sb:hover::after{ transform: translateX(100%); }
+    .sd-sb-1{ background: var(--sd-grad-primary); }
+    .sd-sb-2{ background: linear-gradient(135deg,#D97706,#b45309); }
+    .sd-sb-3{ background: linear-gradient(135deg,#DC2626,#b91c1c); }
+    .sd-sb-4{ background: linear-gradient(135deg,#6D28D9,#4c1d95); }
+    .sd-sb-5{ background: linear-gradient(135deg,#0EA5E9,#0369a1); }
+
+    /* ================= Actions ================= */
+    .sd-actions{
+        display: flex; gap: 12px;
+        justify-content: center; flex-wrap: wrap;
+        margin-top: 2rem; padding-top: 1.5rem;
+        border-top: 1px solid rgba(7,44,44,.10);
+    }
+    .sd-btn{
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 8px;
+        padding: .8rem 1.6rem;
+        font-family: 'Ubuntu', sans-serif;
+        font-weight: 600; font-size: .95rem;
+        border-radius: 50px;
+        text-decoration: none; cursor: pointer;
+        border: 2px solid transparent;
+        transition: transform .3s var(--sd-ease), box-shadow .3s ease, background .3s ease, color .3s ease, border-color .3s ease;
+        min-width: 160px;
+        position: relative; overflow: hidden; isolation: isolate;
+    }
+    .sd-btn::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+        transform: translateX(-100%); transition: transform .8s ease;
+    }
+    .sd-btn:hover::after{ transform: translateX(100%); }
+
+    .sd-btn-edit{
+        background: var(--sd-grad-accent); color:#fff;
+        box-shadow: 0 10px 22px -10px rgba(255,95,3,.55);
+    }
+    .sd-btn-edit:hover{
+        transform: translateY(-3px); color:#fff;
+        box-shadow: 0 16px 30px -10px rgba(255,95,3,.7);
+    }
+    .sd-btn-delete{
+        background: #fff; color: var(--sd-error);
+        border-color: var(--sd-error);
+    }
+    .sd-btn-delete:hover{
+        background: var(--sd-grad-error); color:#fff;
+        transform: translateY(-3px);
+        box-shadow: 0 16px 30px -10px rgba(220,38,38,.55);
+        border-color: transparent;
+    }
+    .sd-btn-back{
+        background: #fff; color: var(--sd-primary);
+        border-color: var(--sd-primary);
+    }
+    .sd-btn-back:hover{
+        background: var(--sd-grad-primary); color:#fff;
+        transform: translateY(-3px);
+        box-shadow: 0 16px 30px -10px rgba(7,44,44,.55);
+        border-color: transparent;
+    }
+
+    /* ================= Accessibility ================= */
+    .sd-btn:focus-visible, .sd-sb:focus-visible{
+        outline: 2px solid var(--sd-secondary);
+        outline-offset: 3px;
+    }
+    @@media (prefers-reduced-motion: reduce){
+        .sd-scope *,
+        .sd-scope *::before,
+        .sd-scope *::after{
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+</style>
+
+<div class="sd-scope">
+
+    <!-- ============== Page Header ============== -->
+    <section class="sd-header sd-anim-fade">
+        <div class="container">
+            <div class="sd-header-icon" aria-hidden="true">
+                <i class="fas fa-circle-check"></i>
+            </div>
+            <h1 class="sd-header-title">تم العثور على بياناتك</h1>
+            <p class="sd-header-sub">يمكنك مراجعة بياناتك أو تعديلها أو حذفها</p>
+        </div>
+    </section>
+
+    <div class="container pb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+
+                <div class="sd-card sd-anim sd-d1">
+
+                    <!-- Profile + Payment -->
+                    <div class="text-center mb-2">
+                        <div class="sd-avatar" aria-hidden="true">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <h2 class="sd-name">@Model.FullName</h2>
+
+                        @if (Model.PaymentStatus)
+                        {
+                            <span class="sd-pay sd-pay-paid" role="status" aria-label="حالة الدفع: تم الدفع">
+                                <i class="fas fa-circle-check" aria-hidden="true"></i>
+                                تم الدفع
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="sd-pay sd-pay-unpaid" role="status" aria-label="حالة الدفع: لم يتم الدفع">
+                                <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+                                لم يتم الدفع
+                            </span>
+                        }
+                    </div>
+
+                    <hr class="sd-divider" />
+
+                    <!-- Info Grid -->
+                    <div class="row g-3">
+                        <div class="col-md-6 sd-anim sd-d2">
+                            <div class="sd-info">
+                                <div class="sd-info-icon"><i class="fas fa-id-card" aria-hidden="true"></i></div>
+                                <div>
+                                    <span class="sd-info-label">الرقم القومي</span>
+                                    <p class="sd-info-value">@Model.NationalId</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 sd-anim sd-d3">
+                            <div class="sd-info">
+                                <div class="sd-info-icon"><i class="fas fa-mobile-screen" aria-hidden="true"></i></div>
+                                <div>
+                                    <span class="sd-info-label">رقم الموبايل</span>
+                                    <p class="sd-info-value">@Model.PhoneNumber</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 sd-anim sd-d4">
+                            <div class="sd-info">
+                                <div class="sd-info-icon"><i class="fas fa-graduation-cap" aria-hidden="true"></i></div>
+                                <div>
+                                    <span class="sd-info-label">المستوى</span>
+                                    <p class="sd-info-value is-rtl">@Model.LevelName</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 sd-anim sd-d5">
+                            <div class="sd-info">
+                                <div class="sd-info-icon"><i class="fas fa-users" aria-hidden="true"></i></div>
+                                <div>
+                                    <span class="sd-info-label">الشعبة</span>
+                                    <p class="sd-info-value is-rtl">@Model.DivisionName</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subjects -->
+                    <div class="mt-4 sd-anim sd-d5">
+                        <h3 class="sd-subjects-title">
+                            <i class="fas fa-book-open" aria-hidden="true"></i>
+                            المواد الدراسية (@Model.SubjectCount مواد)
+                        </h3>
+                        <div class="d-flex gap-2 flex-wrap">
+                            @if (!string.IsNullOrWhiteSpace(Model.Subject1))
+                            {
+                                <span class="sd-sb sd-sb-1"><i class="fas fa-bookmark" aria-hidden="true"></i>@Model.Subject1</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.Subject2))
+                            {
+                                <span class="sd-sb sd-sb-2"><i class="fas fa-bookmark" aria-hidden="true"></i>@Model.Subject2</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.Subject3))
+                            {
+                                <span class="sd-sb sd-sb-3"><i class="fas fa-bookmark" aria-hidden="true"></i>@Model.Subject3</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.Subject4))
+                            {
+                                <span class="sd-sb sd-sb-4"><i class="fas fa-bookmark" aria-hidden="true"></i>@Model.Subject4</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.Subject5))
+                            {
+                                <span class="sd-sb sd-sb-5"><i class="fas fa-bookmark" aria-hidden="true"></i>@Model.Subject5</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="sd-actions sd-anim sd-d6">
+                        <a asp-area="Student" asp-controller="Edit" asp-action="Index"
+                           class="sd-btn sd-btn-edit">
+                            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+                            تعديل البيانات
+                        </a>
+
+                        <form asp-area="Student" asp-controller="Search" asp-action="Delete"
+                              method="post" id="sd-deleteForm" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <button type="button" class="sd-btn sd-btn-delete" id="sd-deleteBtn">
+                                <i class="fas fa-trash-can" aria-hidden="true"></i>
+                                حذف البيانات
+                            </button>
+                        </form>
+
+                        <a asp-area="Student" asp-controller="Search" asp-action="Index"
+                           class="sd-btn sd-btn-back">
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            رجوع
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* Vanilla JS — لا يستخدم innerHTML على بيانات خارجية / لا inline handlers *@
+    <script>
+        (function () {
+            'use strict';
+
+            var deleteBtn  = document.getElementById('sd-deleteBtn');
+            var deleteForm = document.getElementById('sd-deleteForm');
+            if (!deleteBtn || !deleteForm) return;
+
+            deleteBtn.addEventListener('click', function () {
+                if (typeof Swal === 'undefined') {
+                    if (window.confirm('سيتم حذف بياناتك نهائياً. هل أنت متأكد؟')) {
+                        deleteForm.submit();
+                    }
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'هل أنت متأكد؟',
+                    text:  'سيتم حذف بياناتك نهائياً ولا يمكن استرجاعها!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#DC2626',
+                    cancelButtonColor:  '#072C2C',
+                    confirmButtonText:  'نعم، احذف',
+                    cancelButtonText:   'إلغاء',
+                    reverseButtons: true,
+                    focusCancel: true
+                }).then(function (result) {
+                    if (result && result.isConfirmed) {
+                        deleteForm.submit();
+                    }
+                });
+            });
+        })();
+    </script>
+}

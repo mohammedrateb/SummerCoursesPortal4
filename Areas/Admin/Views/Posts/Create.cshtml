@@ -1,0 +1,820 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      Admin/Posts/Create.cshtml — Indigo Command Center Theme
+      • نفس هوية لوحة الإدارة: Indigo + Cyan + Magenta + Purple.
+      • Glassmorphism step cards + shine icons + animations.
+      • Class prefix: apc-* (Admin Post Create).
+
+      🔧 إصلاح مشكلة التضمين (Embed):
+        - بدلاً من الاعتماد على المستخدم لإحضار رابط embed/ بنفسه:
+          • تحويل YouTube تلقائياً (watch?v=, youtu.be/, shorts/) → /embed/
+          • تحويل Google Drive (file/d/.../view) → /preview
+          • التحقق من صحة الرابط + Live preview قبل الإرسال
+        - الـ field اسمه EmbedUrls زي ما هو — صفر تعديل في الـ Backend.
+        - addEventListener بدل inline onclick (آمن).
+
+      • Anti double-submit + accessibility (focus-visible + reduced-motion + aria).
+      • صفر تعديل في الـ Backend — كل asp-* و AntiForgeryToken محفوظة.
+    ═══════════════════════════════════════════════════════════════
+*@
+@model WebApplication1.ViewModels.Admin.CreatePostViewModel
+@{
+    ViewData["Title"] = "إنشاء منشور جديد";
+}
+
+<style>
+    .apc-scope{
+        --apc-primary:#4F46E5;
+        --apc-accent:#06B6D4;
+        --apc-magenta:#EC4899;
+        --apc-purple:#8B5CF6;
+        --apc-success:#10B981;
+        --apc-warning:#F59E0B;
+        --apc-danger:#EF4444;
+        --apc-text:#0F172A;
+        --apc-muted:#64748B;
+        --apc-border:#E2E8F0;
+        --apc-ease: cubic-bezier(.22,.61,.36,1);
+        --apc-grad-primary: linear-gradient(135deg,#4F46E5 0%,#06B6D4 100%);
+        --apc-grad-purple:  linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%);
+        --apc-grad-success: linear-gradient(135deg,#10B981 0%,#34D399 100%);
+        --apc-grad-warning: linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
+    }
+
+    @@keyframes apc-up   { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes apc-shine{ 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+    @@keyframes apc-spin { to { transform: rotate(360deg); } }
+    @@keyframes apc-pop  { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+
+    /* ═══════════ Header ═══════════ */
+    .apc-header{
+        display: flex; align-items: center; gap: 14px;
+        margin-bottom: 1.5rem;
+        animation: apc-up .55s var(--apc-ease) both;
+    }
+    .apc-back-btn{
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        background: #fff;
+        border: 2px solid var(--apc-border);
+        color: var(--apc-text);
+        display: inline-flex; align-items: center; justify-content: center;
+        text-decoration: none;
+        font-weight: 700;
+        transition: background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease;
+    }
+    .apc-back-btn:hover{
+        background: #F8FAFC;
+        border-color: var(--apc-primary);
+        color: var(--apc-primary);
+        transform: translateX(2px);
+    }
+    .apc-back-btn:focus-visible{ outline: 2px solid var(--apc-accent); outline-offset: 2px; }
+
+    .apc-header-icon{
+        width: 48px; height: 48px;
+        border-radius: 14px;
+        background: var(--apc-grad-primary);
+        color: #fff; font-size: 1.2rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: 0 12px 24px -8px rgba(79,70,229,.5);
+        position: relative; overflow: hidden;
+    }
+    .apc-header-icon::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: apc-shine 3s ease-in-out infinite;
+    }
+    .apc-header-text h1{
+        font-weight: 800; margin: 0;
+        color: var(--apc-text); font-size: 1.3rem;
+    }
+    .apc-header-text small{ color: var(--apc-muted); font-weight: 600; }
+
+    /* ═══════════ Step Card ═══════════ */
+    .apc-step{
+        position: relative;
+        background: #fff;
+        border-radius: 20px;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 6px 24px rgba(15,23,42,.07);
+        overflow: hidden;
+        animation: apc-up .55s var(--apc-ease) both;
+    }
+    .apc-step::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:4px;
+    }
+    .apc-step-1::before{ background: var(--apc-grad-primary); }
+    .apc-step-2::before{ background: var(--apc-grad-purple); }
+    .apc-step-3::before{ background: var(--apc-grad-success); }
+    .apc-step-4::before{ background: var(--apc-grad-warning); }
+
+    .apc-step-head{
+        padding: 1.25rem 1.5rem;
+        display: flex; align-items: center; gap: 14px;
+        background: #F8FAFC;
+    }
+    .apc-step-num{
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        color: #fff;
+        font-weight: 800;
+        font-size: 1rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 6px 14px -6px rgba(0,0,0,.3);
+    }
+    .apc-step-1 .apc-step-num{ background: var(--apc-grad-primary); }
+    .apc-step-2 .apc-step-num{ background: var(--apc-grad-purple); }
+    .apc-step-3 .apc-step-num{ background: var(--apc-grad-success); }
+    .apc-step-4 .apc-step-num{ background: var(--apc-grad-warning); }
+
+    .apc-step-title{
+        font-weight: 800; color: var(--apc-text);
+        margin: 0; font-size: 1rem;
+    }
+    .apc-step-sub{ color: var(--apc-muted); font-size: .82rem; }
+    .apc-step-body{ padding: 1.5rem; border-top: 1px solid #F1F5F9; }
+
+    /* ═══════════ Inputs ═══════════ */
+    .apc-input, .apc-textarea{
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--apc-border);
+        padding: 13px 16px;
+        font-family: 'Cairo', sans-serif;
+        background: #F8FAFC;
+        color: var(--apc-text);
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
+    }
+    .apc-input:focus, .apc-textarea:focus{
+        outline: none;
+        background: #fff;
+        border-color: var(--apc-primary);
+        box-shadow: 0 0 0 4px rgba(79,70,229,.15);
+        transform: translateY(-1px);
+    }
+    .apc-input{ font-size: 1.05rem; font-weight: 700; }
+    .apc-textarea{ font-size: .98rem; line-height: 1.85; resize: vertical; }
+    .apc-step-2 .apc-textarea:focus{ border-color: var(--apc-purple); box-shadow: 0 0 0 4px rgba(139,92,246,.15); }
+    .apc-step-4 .apc-textarea:focus{ border-color: var(--apc-warning); box-shadow: 0 0 0 4px rgba(245,158,11,.15); }
+
+    /* ═══════════ Counter Badge ═══════════ */
+    .apc-counter{
+        margin-right: auto;
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(79,70,229,.10);
+        color: var(--apc-primary);
+        padding: 5px 14px;
+        border-radius: 50px;
+        font-size: .8rem;
+        font-weight: 800;
+        border: 1px solid rgba(79,70,229,.2);
+    }
+
+    /* ═══════════ Upload Zone ═══════════ */
+    .apc-upload{
+        position: relative;
+        border: 3px dashed #CBD5E1;
+        border-radius: 18px;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        background: #F8FAFC;
+        cursor: pointer;
+        transition: border-color .25s ease, background .25s ease, transform .25s ease;
+    }
+    .apc-upload:hover, .apc-upload.is-drag{
+        border-color: var(--apc-success);
+        background: #ECFDF5;
+        transform: scale(1.005);
+    }
+    .apc-upload input[type="file"]{
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        opacity: 0; cursor: pointer;
+    }
+    .apc-upload-icon{
+        width: 78px; height: 78px;
+        border-radius: 20px;
+        background: var(--apc-grad-success);
+        display: inline-flex; align-items: center; justify-content: center;
+        margin: 0 auto 1.1rem;
+        font-size: 2.2rem;
+        color: #fff;
+        box-shadow: 0 12px 28px -6px rgba(16,185,129,.45);
+        position: relative; overflow: hidden;
+    }
+    .apc-upload-icon::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: apc-shine 3s ease-in-out infinite;
+    }
+    .apc-upload h4{ font-weight: 800; color: var(--apc-text); margin: 0 0 .35rem; }
+    .apc-upload p{ color: var(--apc-muted); margin: 0 0 1rem; font-size: .9rem; }
+
+    .apc-tag{
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 5px 12px;
+        border-radius: 50px;
+        font-size: .78rem;
+        font-weight: 800;
+        border: 1px solid;
+    }
+    .apc-tag-image { background:#ECFDF5; color:#047857; border-color:#A7F3D0; }
+    .apc-tag-video { background:#F5F3FF; color:#6D28D9; border-color:#DDD6FE; }
+    .apc-tag-pdf   { background:#FEF2F2; color:#B91C1C; border-color:#FECACA; }
+    .apc-tag-file  { background:#EEF2FF; color:#4338CA; border-color:#C7D2FE; }
+
+    /* ═══════════ File List ═══════════ */
+    .apc-file{
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        border: 2px solid var(--apc-border);
+        background: #fff;
+        position: relative;
+        animation: apc-pop .25s var(--apc-ease) both;
+    }
+    .apc-file::before{
+        content:""; position: absolute; right: 0; top: 0; bottom: 0; width: 4px;
+    }
+    .apc-file.t-image{ border-color:#A7F3D0; background:#F0FDF4; }
+    .apc-file.t-image::before{ background: var(--apc-success); }
+    .apc-file.t-video{ border-color:#DDD6FE; background:#F5F3FF; }
+    .apc-file.t-video::before{ background: var(--apc-purple); }
+    .apc-file.t-pdf  { border-color:#FECACA; background:#FEF2F2; }
+    .apc-file.t-pdf::before  { background: var(--apc-danger); }
+    .apc-file.t-file { border-color:#C7D2FE; background:#EEF2FF; }
+    .apc-file.t-file::before { background: var(--apc-primary); }
+
+    .apc-file-icon{
+        width: 48px; height: 48px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        color: #fff;
+    }
+    .apc-file-thumb{
+        width: 48px; height: 48px;
+        border-radius: 12px;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+    .apc-file-info{ flex: 1; min-width: 0; }
+    .apc-file-name{
+        font-weight: 700; color: var(--apc-text);
+        font-size: .9rem;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .apc-file-size{ font-size: .78rem; color: var(--apc-muted); margin-top: 2px; }
+    .apc-file-bar{
+        height: 4px; border-radius: 2px;
+        background: rgba(0,0,0,.06);
+        margin-top: 6px; overflow: hidden;
+    }
+    .apc-file-bar > span{
+        display: block; height: 100%; border-radius: 2px;
+        background: var(--apc-grad-success);
+        animation: apc-pop .35s var(--apc-ease);
+    }
+    .apc-file-remove{
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        background: #FEE2E2; color: var(--apc-danger);
+        border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: background .2s ease, color .2s ease, transform .2s ease;
+        font-size: .85rem;
+        flex-shrink: 0;
+    }
+    .apc-file-remove:hover{
+        background: var(--apc-danger); color: #fff;
+        transform: scale(1.1);
+    }
+
+    /* ═══════════ Embed (الإصلاح) ═══════════ */
+    .apc-embed-tip{
+        margin-top: .85rem;
+        padding: .85rem 1rem;
+        background: #FFFBEB;
+        border: 1px solid #FDE68A;
+        border-radius: 12px;
+        color: #92400E;
+        font-size: .85rem;
+        font-weight: 600;
+        display: flex; gap: 10px;
+        align-items: flex-start;
+    }
+    .apc-embed-tip i{ color: var(--apc-warning); margin-top: 2px; }
+
+    .apc-embed-list{
+        margin-top: 1rem;
+        display: flex; flex-direction: column; gap: 10px;
+    }
+    .apc-embed-row{
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1.5px solid var(--apc-border);
+        animation: apc-pop .25s var(--apc-ease);
+    }
+    .apc-embed-row.is-valid{ border-color:#A7F3D0; background:#F0FDF4; }
+    .apc-embed-row.is-invalid{ border-color:#FECACA; background:#FEF2F2; }
+
+    .apc-embed-icon{
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        font-size: 1rem;
+        color: #fff;
+        background: var(--apc-warning);
+    }
+    .apc-embed-row.is-valid .apc-embed-icon{ background: var(--apc-success); }
+    .apc-embed-row.is-invalid .apc-embed-icon{ background: var(--apc-danger); }
+
+    .apc-embed-text{ flex: 1; min-width: 0; }
+    .apc-embed-type{ font-weight: 800; font-size: .82rem; color: var(--apc-text); }
+    .apc-embed-url{
+        font-size: .75rem; color: var(--apc-muted); direction: ltr;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ═══════════ Submit Bar ═══════════ */
+    .apc-actions{
+        display: flex; gap: 12px; justify-content: center;
+        margin: 1.5rem 0 2.5rem;
+        flex-wrap: wrap;
+    }
+    .apc-btn{
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: .9rem 2rem;
+        border-radius: 14px;
+        font-weight: 800; font-size: 1rem;
+        font-family: 'Cairo', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        position: relative; overflow: hidden; isolation: isolate;
+        transition: transform .25s var(--apc-ease), box-shadow .25s ease, opacity .2s;
+        border: none;
+    }
+    .apc-btn-primary{
+        background: var(--apc-grad-primary);
+        color: #fff;
+        box-shadow: 0 12px 28px -8px rgba(79,70,229,.55);
+    }
+    .apc-btn-primary::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform .8s ease;
+    }
+    .apc-btn-primary:hover{
+        transform: translateY(-3px); color: #fff;
+        box-shadow: 0 16px 36px -8px rgba(79,70,229,.7);
+    }
+    .apc-btn-primary:hover::after{ transform: translateX(100%); }
+    .apc-btn-primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
+    .apc-btn-cancel{
+        background: #fff;
+        color: var(--apc-text);
+        border: 2px solid var(--apc-border);
+    }
+    .apc-btn-cancel:hover{
+        background: #F8FAFC;
+        border-color: var(--apc-primary);
+        color: var(--apc-primary);
+        transform: translateY(-2px);
+    }
+    .apc-btn:focus-visible{ outline: 2px solid var(--apc-accent); outline-offset: 3px; }
+
+    .apc-spin{
+        display:none; width:18px; height:18px;
+        border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff;
+        border-radius: 50%;
+        animation: apc-spin .7s linear infinite;
+    }
+    .apc-btn-primary.is-loading .apc-spin{ display:inline-block; }
+    .apc-btn-primary.is-loading .apc-icon-default{ display:none; }
+
+    @@media (prefers-reduced-motion: reduce){
+        .apc-scope *, .apc-scope *::before, .apc-scope *::after{
+            animation: none !important; transition: none !important;
+        }
+    }
+</style>
+
+<div class="apc-scope">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+
+            <!-- Header -->
+            <div class="apc-header">
+                <a asp-area="Admin" asp-controller="Posts" asp-action="Index"
+                   class="apc-back-btn" title="رجوع">
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
+                <div class="apc-header-icon" aria-hidden="true">
+                    <i class="fas fa-feather-pointed"></i>
+                </div>
+                <div class="apc-header-text">
+                    <h1>إنشاء منشور جديد</h1>
+                    <small>أنشئ منشوراً للطلاب</small>
+                </div>
+            </div>
+
+            <form asp-area="Admin"
+                  asp-controller="Posts"
+                  asp-action="Create"
+                  method="post"
+                  enctype="multipart/form-data"
+                  id="apc-form"
+                  novalidate>
+                @Html.AntiForgeryToken()
+
+                <!-- Step 1 - العنوان -->
+                <div class="apc-step apc-step-1">
+                    <div class="apc-step-head">
+                        <span class="apc-step-num">1</span>
+                        <div>
+                            <h2 class="apc-step-title">العنوان</h2>
+                            <small class="apc-step-sub">عنوان المنشور الرئيسي</small>
+                        </div>
+                    </div>
+                    <div class="apc-step-body">
+                        <input asp-for="Title"
+                               class="apc-input"
+                               placeholder="اكتب عنوان المنشور هنا..."
+                               autocomplete="off" />
+                        <span asp-validation-for="Title"
+                              class="text-danger small mt-2 d-block"></span>
+                    </div>
+                </div>
+
+                <!-- Step 2 - المحتوى -->
+                <div class="apc-step apc-step-2">
+                    <div class="apc-step-head">
+                        <span class="apc-step-num">2</span>
+                        <div>
+                            <h2 class="apc-step-title">المحتوى والوصف</h2>
+                            <small class="apc-step-sub">اكتب تفاصيل المنشور</small>
+                        </div>
+                    </div>
+                    <div class="apc-step-body">
+                        <textarea asp-for="Content"
+                                  rows="10"
+                                  class="apc-textarea"
+                                  placeholder="اكتب محتوى المنشور هنا بالتفصيل..."></textarea>
+                        <span asp-validation-for="Content"
+                              class="text-danger small mt-2 d-block"></span>
+                    </div>
+                </div>
+
+                <!-- Step 3 - الملفات -->
+                <div class="apc-step apc-step-3">
+                    <div class="apc-step-head">
+                        <span class="apc-step-num">3</span>
+                        <div>
+                            <h2 class="apc-step-title">الملفات المرفقة</h2>
+                            <small class="apc-step-sub">صور، فيديو، PDF، ملفات — بدون حد أقصى</small>
+                        </div>
+                        <span class="apc-counter" id="apc-counter" style="display:none">
+                            <i class="fas fa-paperclip" aria-hidden="true"></i>
+                            <span id="apc-count">0</span> ملف
+                        </span>
+                    </div>
+                    <div class="apc-step-body">
+
+                        <div class="apc-upload" id="apc-upload">
+                            <input type="file"
+                                   name="Files"
+                                   id="apc-files"
+                                   multiple
+                                   accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
+                                   aria-label="اختر الملفات" />
+
+                            <div id="apc-prompt">
+                                <div class="apc-upload-icon" aria-hidden="true">
+                                    <i class="fas fa-cloud-arrow-up"></i>
+                                </div>
+                                <h4>اسحب ملفاتك هنا</h4>
+                                <p>أو اضغط لاختيار الملفات من جهازك</p>
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <span class="apc-tag apc-tag-image">
+                                        <i class="fas fa-image" aria-hidden="true"></i> صور
+                                    </span>
+                                    <span class="apc-tag apc-tag-video">
+                                        <i class="fas fa-video" aria-hidden="true"></i> فيديو
+                                    </span>
+                                    <span class="apc-tag apc-tag-pdf">
+                                        <i class="fas fa-file-pdf" aria-hidden="true"></i> PDF
+                                    </span>
+                                    <span class="apc-tag apc-tag-file">
+                                        <i class="fas fa-paperclip" aria-hidden="true"></i> ملفات
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قائمة الملفات -->
+                        <div id="apc-list" class="mt-4" style="display:none">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="fw-bold mb-0" style="color:var(--apc-text)">
+                                    الملفات المختارة
+                                </h6>
+                                <button type="button" id="apc-clear-all"
+                                        class="btn btn-sm fw-bold"
+                                        style="background:#FEE2E2;color:var(--apc-danger);
+                                               border-radius:8px;border:none;padding:6px 14px">
+                                    <i class="fas fa-times me-1" aria-hidden="true"></i>
+                                    إزالة الكل
+                                </button>
+                            </div>
+                            <div id="apc-items" class="d-flex flex-column gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4 - Embed (الإصلاح) -->
+                <div class="apc-step apc-step-4">
+                    <div class="apc-step-head">
+                        <span class="apc-step-num">4</span>
+                        <div>
+                            <h2 class="apc-step-title">تضمين من موقع آخر</h2>
+                            <small class="apc-step-sub">YouTube، Google Drive، SoundCloud... (نحوّلها تلقائياً)</small>
+                        </div>
+                    </div>
+                    <div class="apc-step-body">
+                        <textarea asp-for="EmbedUrls"
+                                  id="apc-embed-input"
+                                  rows="5"
+                                  class="apc-textarea"
+                                  placeholder="ضع روابط التضمين هنا — كل رابط في سطر منفصل&#10;مثال:&#10;https://www.youtube.com/watch?v=...&#10;https://drive.google.com/file/d/.../view&#10;https://vimeo.com/...&#10;https://open.spotify.com/track/...&#10;أو الصق كود <iframe ...> كامل وهنستخرج الرابط تلقائياً"
+                                  style="direction:ltr; font-size:.92rem;"
+                                  spellcheck="false"></textarea>
+
+                        <div class="apc-embed-tip">
+                            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            <span>
+                                <strong>مدعوم تلقائياً:</strong>
+                                YouTube • Vimeo • Dailymotion • Google Drive (ملف/مجلد) •
+                                Google Docs/Sheets/Slides/Forms • Google Maps • Facebook •
+                                Instagram • TikTok • Twitter/X • Loom • SoundCloud • Spotify.
+                                <br />
+                                ✨ تقدر كمان تلصق كود &lt;iframe&gt; مباشرةً وهنستخرج الرابط منه.
+                            </span>
+                        </div>
+
+                        <!-- Live preview للروابط -->
+                        <div id="apc-embed-list" class="apc-embed-list" hidden></div>
+                    </div>
+                </div>
+
+                <!-- أزرار -->
+                <div class="apc-actions">
+                    <button type="submit" id="apc-submit" class="apc-btn apc-btn-primary">
+                        <span class="apc-icon-default">
+                            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                        </span>
+                        <span class="apc-spin" aria-hidden="true"></span>
+                        <span>نشر المنشور</span>
+                    </button>
+                    <a asp-area="Admin" asp-controller="Posts" asp-action="Index"
+                       class="apc-btn apc-btn-cancel">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                        إلغاء
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/embed-normalizer.js" asp-append-version="true"></script>
+    <script src="~/js/upload-progress.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            'use strict';
+            const detectAndNormalize = window.EmbedNormalizer.detectAndNormalize;
+
+            // ═══════════════════════════════════════
+            // إدارة الملفات (آمن — DataTransfer)
+            // ═══════════════════════════════════════
+            const filesInput = document.getElementById('apc-files');
+            const zone       = document.getElementById('apc-upload');
+            const list       = document.getElementById('apc-list');
+            const itemsEl    = document.getElementById('apc-items');
+            const prompt     = document.getElementById('apc-prompt');
+            const counter    = document.getElementById('apc-counter');
+            const countEl    = document.getElementById('apc-count');
+            const clearBtn   = document.getElementById('apc-clear-all');
+
+            let selected = [];
+
+            function fmtSize(b) {
+                if (b < 1024) return b + ' B';
+                if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+                return (b / 1048576).toFixed(1) + ' MB';
+            }
+            function fileType(f) {
+                if (f.type.startsWith('image/')) return 'image';
+                if (f.type.startsWith('video/')) return 'video';
+                if (f.type === 'application/pdf') return 'pdf';
+                return 'file';
+            }
+            const ICONS = {
+                video: 'fa-film',
+                pdf:   'fa-file-pdf',
+                file:  'fa-paperclip'
+            };
+            const COLORS = {
+                video: '#8B5CF6',
+                pdf:   '#EF4444',
+                file:  '#4F46E5'
+            };
+
+            function syncInput() {
+                const dt = new DataTransfer();
+                selected.forEach(f => dt.items.add(f));
+                filesInput.files = dt.files;
+                countEl.textContent = selected.length;
+                counter.style.display = selected.length > 0 ? 'inline-flex' : 'none';
+            }
+
+            function render() {
+                if (selected.length === 0) {
+                    list.style.display   = 'none';
+                    prompt.style.display = 'block';
+                    return;
+                }
+                list.style.display   = 'block';
+                prompt.style.display = 'none';
+                itemsEl.innerHTML = '';
+
+                selected.forEach((f, i) => {
+                    const t = fileType(f);
+                    const row = document.createElement('div');
+                    row.className = 'apc-file t-' + t;
+
+                    const left = document.createElement('div');
+                    left.style.flexShrink = '0';
+
+                    if (t === 'image') {
+                        const img = document.createElement('img');
+                        img.className = 'apc-file-thumb';
+                        img.alt = '';
+                        const fr = new FileReader();
+                        fr.onload = e => { img.src = e.target.result; };
+                        fr.readAsDataURL(f);
+                        left.appendChild(img);
+                    } else {
+                        const ic = document.createElement('div');
+                        ic.className = 'apc-file-icon';
+                        ic.style.background = COLORS[t];
+                        ic.innerHTML = `<i class="fas ${ICONS[t]}" aria-hidden="true"></i>`;
+                        left.appendChild(ic);
+                    }
+
+                    const info = document.createElement('div');
+                    info.className = 'apc-file-info';
+                    info.innerHTML = `
+                        <div class="apc-file-name" title=""></div>
+                        <div class="apc-file-size">${fmtSize(f.size)}</div>
+                        <div class="apc-file-bar"><span></span></div>
+                    `;
+                    info.querySelector('.apc-file-name').textContent = f.name;
+                    info.querySelector('.apc-file-name').title = f.name;
+
+                    const rm = document.createElement('button');
+                    rm.type = 'button';
+                    rm.className = 'apc-file-remove';
+                    rm.title = 'إزالة';
+                    rm.setAttribute('aria-label', 'إزالة ' + f.name);
+                    rm.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
+                    rm.addEventListener('click', () => {
+                        selected.splice(i, 1);
+                        render();
+                        syncInput();
+                    });
+
+                    row.appendChild(left);
+                    row.appendChild(info);
+                    row.appendChild(rm);
+                    itemsEl.appendChild(row);
+                });
+            }
+
+            function addFiles(files) {
+                Array.from(files).forEach(f => {
+                    if (!selected.find(x => x.name === f.name && x.size === f.size)) {
+                        selected.push(f);
+                    }
+                });
+                render();
+                syncInput();
+            }
+
+            filesInput.addEventListener('change', e => addFiles(e.target.files));
+            clearBtn.addEventListener('click', () => {
+                selected = [];
+                render();
+                syncInput();
+            });
+
+            // Drag & Drop
+            ['dragover', 'dragenter'].forEach(ev =>
+                zone.addEventListener(ev, e => {
+                    e.preventDefault();
+                    zone.classList.add('is-drag');
+                })
+            );
+            ['dragleave', 'dragend'].forEach(ev =>
+                zone.addEventListener(ev, () => zone.classList.remove('is-drag'))
+            );
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.classList.remove('is-drag');
+                if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+            });
+
+            // ═══════════════════════════════════════
+            // 🔧 Embed URL Normalizer + Preview
+            //    • YouTube watch/youtu.be/shorts → /embed/
+            //    • Google Drive view/open → /preview
+            //    • التحقق من الصحة قبل الإرسال
+            //    • النص بيتعدّل في نفس الـ textarea (EmbedUrls)
+            //      عشان الـ Backend يستلم رابط نظيف
+            // ═══════════════════════════════════════
+            const embedTA   = document.getElementById('apc-embed-input');
+            const embedList = document.getElementById('apc-embed-list');
+
+            function refreshEmbedPreview() {
+                const lines = embedTA.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                if (lines.length === 0) {
+                    embedList.hidden = true;
+                    embedList.innerHTML = '';
+                    return;
+                }
+                embedList.hidden = false;
+                embedList.innerHTML = '';
+
+                lines.forEach(line => {
+                    const info = detectAndNormalize(line);
+                    if (!info) return;
+
+                    const row = document.createElement('div');
+                    row.className = 'apc-embed-row ' + (info.valid ? 'is-valid' : 'is-invalid');
+
+                    row.innerHTML = `
+                        <span class="apc-embed-icon" aria-hidden="true">
+                            <i class="fab ${info.icon}"></i>
+                        </span>
+                        <div class="apc-embed-text">
+                            <div class="apc-embed-type"></div>
+                            <div class="apc-embed-url"></div>
+                        </div>
+                    `;
+                    row.querySelector('.apc-embed-type').textContent =
+                        info.type + (info.valid && info.normalized !== line ? ' — تم التحويل' : '');
+                    row.querySelector('.apc-embed-url').textContent = info.normalized;
+
+                    embedList.appendChild(row);
+                });
+            }
+
+            embedTA.addEventListener('input', refreshEmbedPreview);
+            embedTA.addEventListener('blur', refreshEmbedPreview);
+
+            // ═══════════════════════════════════════
+            // Submit handling
+            //   • تحويل الروابط نهائياً قبل الإرسال
+            //   • Anti double-submit
+            // ═══════════════════════════════════════
+            const form     = document.getElementById('apc-form');
+            const submitBtn = document.getElementById('apc-submit');
+
+            // رفع AJAX مع progress overlay (بدل submit عادى يظهر "علّق")
+            window.UploadProgress.attach(form, {
+                submitBtn: submitBtn,
+                successText: 'تم نشر المنشور بنجاح ✓',
+                onBeforeSend: function (fd) {
+                    // طبّع روابط التضمين قبل الإرسال
+                    const lines = embedTA.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    const normalized = lines
+                        .map(detectAndNormalize)
+                        .filter(x => x && x.valid)
+                        .map(x => x.normalized)
+                        .join('\n');
+                    embedTA.value = normalized;
+                    fd.set('EmbedUrls', normalized);
+                }
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,407 @@
+@model WebApplication1.ViewModels.Admin.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "الرئيسية";
+
+    var levelLabels   = System.Text.Json.JsonSerializer.Serialize(Model.StudentsByLevel.Keys.ToList());
+    var levelData     = System.Text.Json.JsonSerializer.Serialize(Model.StudentsByLevel.Values.ToList());
+    var divLabels     = System.Text.Json.JsonSerializer.Serialize(Model.StudentsByDivision.Keys.ToList());
+    var divData       = System.Text.Json.JsonSerializer.Serialize(Model.StudentsByDivision.Values.ToList());
+    var regDates      = System.Text.Json.JsonSerializer.Serialize(Model.RegistrationsLast7Days.Select(x => x.Date).ToList());
+    var regCounts     = System.Text.Json.JsonSerializer.Serialize(Model.RegistrationsLast7Days.Select(x => x.Count).ToList());
+}
+
+<style>
+    .ahm-scope{
+        --ahm-primary:#4F46E5; --ahm-accent:#06B6D4; --ahm-magenta:#EC4899;
+        --ahm-purple:#8B5CF6;  --ahm-success:#10B981; --ahm-warning:#F59E0B;
+        --ahm-danger:#EF4444;  --ahm-text:#0F172A;    --ahm-muted:#64748B;
+        --ahm-ease: cubic-bezier(.22,.61,.36,1);
+        --ahm-grad-primary: linear-gradient(135deg,#4F46E5 0%,#06B6D4 100%);
+        --ahm-grad-purple:  linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%);
+        --ahm-grad-success: linear-gradient(135deg,#10B981 0%,#34D399 100%);
+        --ahm-grad-warning: linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
+        --ahm-grad-danger:  linear-gradient(135deg,#EF4444 0%,#F87171 100%);
+    }
+
+    @@keyframes ahm-up   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes ahm-shine{ 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+    @@keyframes ahm-float{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+    .ahm-welcome{
+        position:relative; background:linear-gradient(135deg,#1E1B4B 0%,#0F172A 100%);
+        border-radius:22px; padding:2rem 2.25rem; margin-bottom:1.75rem;
+        color:#fff; overflow:hidden; animation:ahm-up .55s var(--ahm-ease) both;
+        box-shadow:0 18px 40px -12px rgba(15,23,42,.5);
+    }
+    .ahm-welcome::before{
+        content:""; position:absolute; inset:0; pointer-events:none;
+        background:radial-gradient(60% 60% at 80% 20%,rgba(79,70,229,.45),transparent 60%),
+                   radial-gradient(50% 50% at 10% 90%,rgba(6,182,212,.30),transparent 60%);
+    }
+    .ahm-welcome::after{
+        content:""; position:absolute; left:0; right:0; top:0; height:4px;
+        background:linear-gradient(90deg,var(--ahm-primary),var(--ahm-accent),var(--ahm-magenta));
+    }
+    .ahm-welcome-inner{ position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+    .ahm-welcome h1{ font-weight:800; margin:0 0 .35rem; font-size:1.55rem; }
+    .ahm-welcome h1 .ahm-wave{ display:inline-block; margin-right:6px; animation:ahm-float 2.4s ease-in-out infinite; }
+    .ahm-welcome p{ margin:0; color:rgba(255,255,255,.7); font-size:.95rem; }
+    .ahm-welcome p i{ color:#22D3EE; margin-left:6px; }
+
+    .ahm-reg-badge{
+        display:inline-flex; align-items:center; gap:8px;
+        padding:.55rem 1.1rem; border-radius:50px; font-weight:800; font-size:.88rem;
+        border:2px solid; backdrop-filter:blur(8px);
+    }
+    .ahm-reg-open  { background:rgba(16,185,129,.2);  color:#6EE7B7; border-color:rgba(16,185,129,.4); }
+    .ahm-reg-closed{ background:rgba(239,68,68,.2);   color:#FCA5A5; border-color:rgba(239,68,68,.4);  }
+
+    .ahm-stat{
+        position:relative; border-radius:20px; padding:1.5rem 1.75rem;
+        color:#fff; overflow:hidden;
+        box-shadow:0 14px 30px -10px rgba(15,23,42,.25);
+        animation:ahm-up .55s var(--ahm-ease) both; height:100%;
+    }
+    .ahm-stat::after{
+        content:""; position:absolute; inset:0;
+        background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.10) 50%,transparent 70%);
+        transform:translateX(-100%); animation:ahm-shine 5s ease-in-out infinite; pointer-events:none;
+    }
+    .ahm-stat-inner{ position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; }
+    .ahm-stat-label{ opacity:.85; font-size:.9rem; margin:0 0 .35rem; font-weight:700; }
+    .ahm-stat-value{ font-weight:800; font-size:2.2rem; margin:0; line-height:1; }
+    .ahm-stat-sub  { font-size:.8rem; opacity:.7; margin:.25rem 0 0; }
+    .ahm-stat-icon{
+        width:56px; height:56px; border-radius:16px;
+        background:rgba(255,255,255,.18); backdrop-filter:blur(6px);
+        display:inline-flex; align-items:center; justify-content:center; font-size:1.5rem;
+    }
+    .ahm-stat-s1{ background:var(--ahm-grad-primary); } .ahm-stagger-1{ animation-delay:.05s; }
+    .ahm-stat-s2{ background:var(--ahm-grad-success); } .ahm-stagger-2{ animation-delay:.12s; }
+    .ahm-stat-s3{ background:var(--ahm-grad-danger);  } .ahm-stagger-3{ animation-delay:.19s; }
+    .ahm-stat-s4{ background:var(--ahm-grad-primary);  } .ahm-stagger-4{ animation-delay:.26s; }
+
+    .ahm-chart-card{
+        background:#fff; border-radius:20px;
+        box-shadow:0 12px 40px rgba(15,23,42,.08);
+        padding:1.5rem 1.75rem;
+        animation:ahm-up .55s var(--ahm-ease) both;
+        position:relative; overflow:hidden;
+    }
+    .ahm-chart-card::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:4px;
+        background:linear-gradient(90deg,var(--ahm-primary),var(--ahm-accent),var(--ahm-magenta));
+    }
+    .ahm-chart-title{
+        font-weight:800; font-size:1.05rem; color:var(--ahm-text);
+        margin:0 0 1.25rem; display:flex; align-items:center; gap:8px;
+    }
+    .ahm-chart-title i{ color:var(--ahm-primary); }
+
+    .ahm-quick-link{
+        display:flex; align-items:center; gap:12px;
+        padding:.9rem 1.1rem; border-radius:14px;
+        text-decoration:none; color:var(--ahm-text);
+        background:#F8FAFC; border:2px solid #E2E8F0;
+        font-weight:700; font-size:.9rem;
+        transition:all .25s var(--ahm-ease);
+        margin-bottom:.6rem;
+    }
+    .ahm-quick-link:hover{
+        border-color:var(--ahm-primary); background:#EEF2FF;
+        color:var(--ahm-primary); transform:translateX(-4px);
+    }
+    .ahm-quick-link .ahm-ql-icon{
+        width:38px; height:38px; border-radius:10px;
+        display:inline-flex; align-items:center; justify-content:center;
+        font-size:.95rem; color:#fff; flex-shrink:0;
+    }
+    .ahm-prog-bar{
+        height:10px; border-radius:999px;
+        background:linear-gradient(90deg,var(--ahm-success),#34D399);
+        transition:width .8s var(--ahm-ease);
+    }
+    .ahm-prog-track{ background:#F1F5F9; border-radius:999px; height:10px; margin-top:.5rem; }
+
+    @@media(prefers-reduced-motion:reduce){
+        .ahm-scope *,.ahm-scope *::before,.ahm-scope *::after{
+            animation:none!important; transition:none!important;
+        }
+    }
+</style>
+
+<div class="ahm-scope">
+
+    <!-- Welcome Banner -->
+    <div class="ahm-welcome">
+        <div class="ahm-welcome-inner">
+            <div>
+                <h1>
+                    <span class="ahm-wave" aria-hidden="true">👋</span>
+                    مرحباً، @Context.Session.GetString("AdminUsername")
+                </h1>
+                <p>
+                    <i class="fas fa-shield-halved" aria-hidden="true"></i>
+                    لوحة تحكم Summer Courses Portal — كلية التربية جامعة أسيوط
+                </p>
+            </div>
+            <div>
+                @if (Model.RegistrationIsOpen)
+                {
+                    <span class="ahm-reg-badge ahm-reg-open">
+                        <i class="fas fa-circle" style="font-size:.55rem"></i>
+                        التسجيل مفتوح
+                    </span>
+                }
+                else
+                {
+                    <span class="ahm-reg-badge ahm-reg-closed">
+                        <i class="fas fa-circle" style="font-size:.55rem"></i>
+                        التسجيل مغلق
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="ahm-stat ahm-stat-s1 ahm-stagger-1">
+                <div class="ahm-stat-inner">
+                    <div>
+                        <p class="ahm-stat-label">إجمالي الطلاب</p>
+                        <h3 class="ahm-stat-value">@Model.TotalStudents</h3>
+                    </div>
+                    <div class="ahm-stat-icon" aria-hidden="true"><i class="fas fa-user-graduate"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ahm-stat ahm-stat-s2 ahm-stagger-2">
+                <div class="ahm-stat-inner">
+                    <div>
+                        <p class="ahm-stat-label">تم الدفع</p>
+                        <h3 class="ahm-stat-value">@Model.PaidStudents</h3>
+                        <p class="ahm-stat-sub">@Model.PaidPercentage%</p>
+                    </div>
+                    <div class="ahm-stat-icon" aria-hidden="true"><i class="fas fa-circle-check"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ahm-stat ahm-stat-s3 ahm-stagger-3">
+                <div class="ahm-stat-inner">
+                    <div>
+                        <p class="ahm-stat-label">لم يتم الدفع</p>
+                        <h3 class="ahm-stat-value">@Model.UnpaidStudents</h3>
+                    </div>
+                    <div class="ahm-stat-icon" aria-hidden="true"><i class="fas fa-circle-xmark"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ahm-stat ahm-stat-s4 ahm-stagger-4">
+                <div class="ahm-stat-inner">
+                    <div>
+                        <p class="ahm-stat-label">المنشورات</p>
+                        <h3 class="ahm-stat-value">@Model.TotalPosts</h3>
+                    </div>
+                    <div class="ahm-stat-icon" aria-hidden="true"><i class="fas fa-newspaper"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Progress -->
+    @if (Model.TotalStudents > 0)
+    {
+        <div class="ahm-chart-card mb-4 ahm-stagger-2">
+            <p class="ahm-chart-title">
+                <i class="fas fa-chart-line" aria-hidden="true"></i>
+                نسبة الدفع الكلية
+            </p>
+            <div class="d-flex justify-content-between mb-1" style="font-size:.88rem; font-weight:700; color:var(--ahm-muted)">
+                <span>@Model.PaidStudents مدفوع من @Model.TotalStudents</span>
+                <span>@Model.PaidPercentage%</span>
+            </div>
+            <div class="ahm-prog-track">
+                <div class="ahm-prog-bar" style="width:@Model.PaidPercentage%" role="progressbar"
+                     aria-valuenow="@Model.PaidPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    }
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+
+        <!-- Line: آخر 7 أيام -->
+        <div class="col-lg-8">
+            <div class="ahm-chart-card ahm-stagger-2" style="height:100%">
+                <p class="ahm-chart-title">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    تسجيلات آخر 7 أيام
+                </p>
+                <canvas id="chartLine" height="120"></canvas>
+            </div>
+        </div>
+
+        <!-- Donut: الشعب -->
+        <div class="col-lg-4">
+            <div class="ahm-chart-card ahm-stagger-3" style="height:100%">
+                <p class="ahm-chart-title">
+                    <i class="fas fa-chart-pie" aria-hidden="true"></i>
+                    الطلاب بالشعبة
+                </p>
+                <canvas id="chartDonut" height="200"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4 mb-4">
+
+        <!-- Bar: المستويات -->
+        <div class="col-lg-7">
+            <div class="ahm-chart-card ahm-stagger-3">
+                <p class="ahm-chart-title">
+                    <i class="fas fa-chart-bar" aria-hidden="true"></i>
+                    الطلاب بالمستوى
+                </p>
+                <canvas id="chartBar" height="140"></canvas>
+            </div>
+        </div>
+
+        <!-- Quick links -->
+        <div class="col-lg-5">
+            <div class="ahm-chart-card ahm-stagger-4">
+                <p class="ahm-chart-title">
+                    <i class="fas fa-bolt" aria-hidden="true"></i>
+                    روابط سريعة
+                </p>
+                <a asp-area="Admin" asp-controller="Students" asp-action="Index" class="ahm-quick-link">
+                    <span class="ahm-ql-icon" style="background:var(--ahm-grad-primary)"><i class="fas fa-users"></i></span>
+                    إدارة الطلاب
+                </a>
+                <a asp-area="Admin" asp-controller="Students" asp-action="Index"
+                   asp-route-paymentFilter="unpaid" class="ahm-quick-link">
+                    <span class="ahm-ql-icon" style="background:var(--ahm-grad-danger)"><i class="fas fa-circle-xmark"></i></span>
+                    الطلاب غير المدفوعين
+                </a>
+                <a asp-area="Admin" asp-controller="Posts" asp-action="Index" class="ahm-quick-link">
+                    <span class="ahm-ql-icon" style="background:var(--ahm-grad-purple)"><i class="fas fa-newspaper"></i></span>
+                    إدارة المنشورات
+                </a>
+                <a asp-area="Admin" asp-controller="Settings" asp-action="Index" class="ahm-quick-link">
+                    <span class="ahm-ql-icon" style="background:var(--ahm-grad-warning)"><i class="fas fa-gear"></i></span>
+                    إعدادات التسجيل
+                </a>
+                <a asp-area="Admin" asp-controller="Students" asp-action="ExportExcel" class="ahm-quick-link">
+                    <span class="ahm-ql-icon" style="background:var(--ahm-grad-success)"><i class="fas fa-file-excel"></i></span>
+                    تصدير Excel
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+    'use strict';
+
+    Chart.defaults.font.family = "'Cairo', sans-serif";
+    Chart.defaults.color = '#64748B';
+
+    const palette = [
+        '#4F46E5','#06B6D4','#EC4899','#8B5CF6',
+        '#10B981','#F59E0B','#EF4444','#3B82F6'
+    ];
+
+    // ── Line chart: آخر 7 أيام ──
+    const lineCtx = document.getElementById('chartLine');
+    if (lineCtx) {
+        new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(regDates),
+                datasets: [{
+                    label: 'تسجيلات جديدة',
+                    data: @Html.Raw(regCounts),
+                    borderColor: '#4F46E5',
+                    backgroundColor: 'rgba(79,70,229,.12)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#4F46E5',
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    // ── Donut chart: الشعب ──
+    const donutCtx = document.getElementById('chartDonut');
+    if (donutCtx) {
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(divLabels),
+                datasets: [{
+                    data: @Html.Raw(divData),
+                    backgroundColor: palette,
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 12, boxWidth: 14, font: { size: 11 } } }
+                }
+            }
+        });
+    }
+
+    // ── Bar chart: المستويات ──
+    const barCtx = document.getElementById('chartBar');
+    if (barCtx) {
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(levelLabels),
+                datasets: [{
+                    label: 'عدد الطلاب',
+                    data: @Html.Raw(levelData),
+                    backgroundColor: ['rgba(79,70,229,.85)', 'rgba(6,182,212,.85)', 'rgba(236,72,153,.85)'],
+                    borderRadius: 10,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+})();
+</script>
+}

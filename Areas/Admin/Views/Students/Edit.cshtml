@@ -1,0 +1,421 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      Admin/Students/Edit.cshtml — Indigo Command Center Theme
+      • Glassmorphism card + step header.
+      • Class prefix: aed-* (Admin Edit).
+      • Subjects show/hide آمن باستخدام data-subject-index + hidden.
+      • Auto-format للرقم القومي والموبايل (لو موجودين في الموديل).
+      • Anti double-submit + loading state.
+      • Anti-forgery + asp-* helpers محفوظة. صفر Backend.
+    ═══════════════════════════════════════════════════════════════
+*@
+@model WebApplication1.ViewModels.Student.StudentEditViewModel
+@{
+    ViewData["Title"] = "تعديل بيانات الطالب";
+}
+
+<style>
+    .aed-scope{
+        --aed-primary:#4F46E5; --aed-accent:#06B6D4; --aed-magenta:#EC4899;
+        --aed-success:#10B981; --aed-warning:#F59E0B; --aed-danger:#EF4444;
+        --aed-text:#0F172A; --aed-muted:#64748B; --aed-border:#E2E8F0;
+        --aed-ease: cubic-bezier(.22,.61,.36,1);
+        --aed-grad-primary: linear-gradient(135deg,#4F46E5 0%,#06B6D4 100%);
+        --aed-grad-accent:  linear-gradient(135deg,#06B6D4 0%,#22D3EE 100%);
+        --aed-grad-magenta: linear-gradient(135deg,#EC4899 0%,#F472B6 100%);
+        --aed-grad-purple:  linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%);
+        --aed-grad-success: linear-gradient(135deg,#10B981 0%,#34D399 100%);
+        --aed-grad-warning: linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
+    }
+
+    @@keyframes aed-up   { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes aed-shine{ 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+    @@keyframes aed-spin { to { transform: rotate(360deg); } }
+
+    .aed-card{
+        position: relative;
+        background: #fff;
+        border-radius: 22px;
+        box-shadow: 0 12px 40px rgba(15,23,42,.10);
+        padding: 2.5rem;
+        overflow: hidden;
+        animation: aed-up .55s var(--aed-ease) both;
+    }
+    .aed-card::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:5px;
+        background: linear-gradient(90deg, var(--aed-primary), var(--aed-accent), var(--aed-magenta));
+    }
+    @@media (max-width: 576px){ .aed-card{ padding: 1.5rem; } }
+
+    .aed-head{
+        display: flex; align-items: center; gap: 14px;
+        margin-bottom: 2rem;
+    }
+    .aed-head-icon{
+        width: 56px; height: 56px;
+        border-radius: 16px;
+        background: var(--aed-grad-primary);
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 1.4rem;
+        box-shadow: 0 12px 24px -8px rgba(79,70,229,.5);
+        position: relative; overflow: hidden;
+        flex-shrink: 0;
+    }
+    .aed-head-icon::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: aed-shine 3s ease-in-out infinite;
+    }
+    .aed-head-title{
+        font-weight: 800; margin: 0;
+        color: var(--aed-text);
+        font-size: 1.35rem;
+    }
+    .aed-head-sub{ color: var(--aed-muted); font-size: .88rem; }
+
+    .aed-section{
+        display: flex; align-items: center; gap: 12px;
+        margin: 1.75rem 0 1rem;
+        padding-bottom: .75rem;
+        border-bottom: 2px dashed #E2E8F0;
+    }
+    .aed-section:first-of-type{ margin-top: 0; }
+    .aed-section-num{
+        width: 32px; height: 32px;
+        border-radius: 10px;
+        color: #fff;
+        font-weight: 800;
+        font-size: .95rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 6px 14px -6px rgba(0,0,0,.3);
+    }
+    .aed-section-num-1{ background: var(--aed-grad-primary); }
+    .aed-section-num-2{ background: var(--aed-grad-magenta); }
+    .aed-section-num-3{ background: var(--aed-grad-success); }
+    .aed-section-title{
+        font-weight: 800;
+        font-size: 1rem;
+        color: var(--aed-text);
+        margin: 0;
+    }
+    .aed-section-sub{
+        color: var(--aed-muted); font-size: .82rem;
+        display: block; margin-top: 2px;
+    }
+
+    .aed-label{
+        display: flex; align-items: center; gap: 8px;
+        font-weight: 700; color: var(--aed-text);
+        margin-bottom: .5rem; font-size: .92rem;
+    }
+    .aed-label i{
+        color: var(--aed-primary); width: 16px; text-align: center; font-size: .9rem;
+    }
+
+    .aed-input, .aed-select{
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--aed-border);
+        padding: 12px 14px;
+        font-family: 'Cairo', sans-serif;
+        font-size: .98rem;
+        background: #F8FAFC;
+        color: var(--aed-text);
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
+    }
+    .aed-input:focus, .aed-select:focus{
+        outline: none;
+        background: #fff;
+        border-color: var(--aed-primary);
+        box-shadow: 0 0 0 4px rgba(79,70,229,.15);
+        transform: translateY(-1px);
+    }
+    .aed-input.is-valid{ border-color: var(--aed-success); }
+    .aed-input.is-invalid{ border-color: var(--aed-danger); }
+
+    .aed-help{
+        font-size: .78rem; color: var(--aed-muted);
+        margin-top: .3rem; font-variant-numeric: tabular-nums;
+    }
+    .aed-help strong{ color: var(--aed-primary); }
+    .aed-help.is-ok strong{ color: var(--aed-success); }
+
+    .aed-subjects{ display: flex; flex-direction: column; gap: 1rem; }
+    .aed-subject-box{ animation: aed-up .35s var(--aed-ease); }
+    .aed-subject-box[hidden]{ display: none !important; }
+    .aed-icon-sub{
+        width: 26px; height: 26px;
+        border-radius: 8px;
+        color: #fff;
+        font-size: .75rem; font-weight: 800;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+    .aed-icon-1{ background: var(--aed-grad-primary); }
+    .aed-icon-2{ background: var(--aed-grad-magenta); }
+    .aed-icon-3{ background: var(--aed-grad-success); }
+    .aed-icon-4{ background: var(--aed-grad-purple); }
+    .aed-icon-5{ background: var(--aed-grad-warning); }
+
+    .aed-actions{
+        display: flex; gap: 12px; margin-top: 2rem;
+        flex-wrap: wrap;
+        padding-top: 1.5rem;
+        border-top: 1px solid #F1F5F9;
+    }
+    .aed-btn-primary, .aed-btn-cancel{
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: .85rem 2rem;
+        border-radius: 12px;
+        font-weight: 800; font-size: .96rem;
+        font-family: 'Cairo', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: transform .25s var(--aed-ease), box-shadow .25s ease, background .3s ease, color .3s ease;
+        position: relative; overflow: hidden;
+    }
+    .aed-btn-primary{
+        background: var(--aed-grad-primary);
+        color: #fff;
+        border: none;
+        box-shadow: 0 10px 24px -8px rgba(79,70,229,.55);
+    }
+    .aed-btn-primary:hover{
+        transform: translateY(-3px); color:#fff;
+        box-shadow: 0 14px 30px -8px rgba(79,70,229,.7);
+    }
+    .aed-btn-primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
+    .aed-btn-cancel{
+        background: #fff;
+        color: var(--aed-text);
+        border: 2px solid var(--aed-border);
+    }
+    .aed-btn-cancel:hover{
+        background: #F8FAFC;
+        border-color: var(--aed-primary);
+        color: var(--aed-primary);
+        transform: translateY(-2px);
+    }
+    .aed-spinner{
+        display:none; width:18px; height:18px;
+        border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff;
+        border-radius: 50%;
+        animation: aed-spin .7s linear infinite;
+    }
+    .aed-btn-primary.is-loading .aed-spinner{ display:inline-block; }
+    .aed-btn-primary.is-loading .aed-btn-icon{ display:none; }
+
+    .aed-btn-primary:focus-visible, .aed-btn-cancel:focus-visible,
+    .aed-input:focus-visible, .aed-select:focus-visible{
+        outline: 2px solid var(--aed-accent); outline-offset: 2px;
+    }
+    @@media (prefers-reduced-motion: reduce){
+        .aed-scope *, .aed-scope *::before, .aed-scope *::after{
+            animation: none !important; transition: none !important;
+        }
+    }
+</style>
+
+<div class="aed-scope">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="aed-card">
+
+                <div class="aed-head">
+                    <div class="aed-head-icon" aria-hidden="true">
+                        <i class="fas fa-user-pen"></i>
+                    </div>
+                    <div>
+                        <h1 class="aed-head-title">تعديل بيانات الطالب</h1>
+                        <small class="aed-head-sub">يمكنك تعديل جميع البيانات</small>
+                    </div>
+                </div>
+
+                <form asp-area="Admin" asp-controller="Students" asp-action="Edit"
+                      method="post" id="aed-form" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <!-- Section 1: البيانات الأساسية -->
+                    <div class="aed-section">
+                        <span class="aed-section-num aed-section-num-1">1</span>
+                        <div>
+                            <h2 class="aed-section-title">البيانات الأساسية</h2>
+                            <small class="aed-section-sub">الاسم، المستوى، والشعبة</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="aed-label" asp-for="FullName">
+                                <i class="fas fa-user" aria-hidden="true"></i>
+                                الاسم الكامل
+                            </label>
+                            <input asp-for="FullName" class="aed-input"
+                                   placeholder="أدخل الاسم الكامل" autocomplete="name" />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="aed-label" asp-for="LevelId">
+                                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                                المستوى
+                            </label>
+                            <select asp-for="LevelId" class="aed-select form-select">
+                                @foreach (var level in Model.Levels)
+                                {
+                                    <option value="@level.Id">@level.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="LevelId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="aed-label" asp-for="DivisionId">
+                                <i class="fas fa-users" aria-hidden="true"></i>
+                                الشعبة
+                            </label>
+                            <select asp-for="DivisionId" class="aed-select form-select">
+                                @foreach (var div in Model.Divisions)
+                                {
+                                    <option value="@div.Id">@div.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="DivisionId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: المواد -->
+                    <div class="aed-section">
+                        <span class="aed-section-num aed-section-num-3">2</span>
+                        <div>
+                            <h2 class="aed-section-title">المواد الدراسية</h2>
+                            <small class="aed-section-sub">حدد عدد المواد ثم أدخل أسماءها</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="aed-label" asp-for="SubjectCount">
+                                <i class="fas fa-list-ol" aria-hidden="true"></i>
+                                عدد المواد
+                            </label>
+                            <select asp-for="SubjectCount" class="aed-select form-select" id="aed-subjectCount">
+                                <option value="1">مادة واحدة</option>
+                                <option value="2">مادتان</option>
+                                <option value="3">ثلاث مواد</option>
+                                <option value="4">أربع مواد</option>
+                                <option value="5">خمس مواد</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="aed-subjects" id="aed-subjectsContainer">
+                        <div class="aed-subject-box" data-subject-index="1">
+                            <label class="aed-label" asp-for="Subject1">
+                                <span class="aed-icon-sub aed-icon-1" aria-hidden="true">1</span>
+                                المادة الأولى <span class="text-danger" aria-hidden="true">*</span>
+                            </label>
+                            <input asp-for="Subject1" class="aed-input"
+                                   placeholder="أدخل اسم المادة الأولى" />
+                            <span asp-validation-for="Subject1" class="text-danger small"></span>
+                        </div>
+
+                        <div class="aed-subject-box" data-subject-index="2">
+                            <label class="aed-label" asp-for="Subject2">
+                                <span class="aed-icon-sub aed-icon-2" aria-hidden="true">2</span>
+                                المادة الثانية
+                            </label>
+                            <input asp-for="Subject2" class="aed-input"
+                                   placeholder="أدخل اسم المادة الثانية" />
+                        </div>
+
+                        <div class="aed-subject-box" data-subject-index="3">
+                            <label class="aed-label" asp-for="Subject3">
+                                <span class="aed-icon-sub aed-icon-3" aria-hidden="true">3</span>
+                                المادة الثالثة
+                            </label>
+                            <input asp-for="Subject3" class="aed-input"
+                                   placeholder="أدخل اسم المادة الثالثة" />
+                        </div>
+
+                        <div class="aed-subject-box" data-subject-index="4">
+                            <label class="aed-label" asp-for="Subject4">
+                                <span class="aed-icon-sub aed-icon-4" aria-hidden="true">4</span>
+                                المادة الرابعة
+                            </label>
+                            <input asp-for="Subject4" class="aed-input"
+                                   placeholder="أدخل اسم المادة الرابعة" />
+                        </div>
+
+                        <div class="aed-subject-box" data-subject-index="5">
+                            <label class="aed-label" asp-for="Subject5">
+                                <span class="aed-icon-sub aed-icon-5" aria-hidden="true">5</span>
+                                المادة الخامسة
+                            </label>
+                            <input asp-for="Subject5" class="aed-input"
+                                   placeholder="أدخل اسم المادة الخامسة" />
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="aed-actions">
+                        <button type="submit" class="aed-btn-primary" id="aed-submit">
+                            <span class="aed-spinner" aria-hidden="true"></span>
+                            <i class="fas fa-floppy-disk aed-btn-icon" aria-hidden="true"></i>
+                            <span>حفظ التعديلات</span>
+                        </button>
+                        <a asp-area="Admin" asp-controller="Students" asp-action="Index"
+                           class="aed-btn-cancel">
+                            <i class="fas fa-xmark" aria-hidden="true"></i>
+                            إلغاء
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            // ===== إظهار/إخفاء حقول المواد بناءً على عدد المواد المختار =====
+            var subjectCount = document.getElementById('aed-subjectCount');
+            var boxes = Array.prototype.slice.call(
+                document.querySelectorAll('#aed-subjectsContainer .aed-subject-box'));
+
+            function updateSubjects(){
+                if (!subjectCount) return;
+                var n = parseInt(subjectCount.value, 10) || 1;
+                boxes.forEach(function (box) {
+                    var idx = parseInt(box.getAttribute('data-subject-index'), 10) || 0;
+                    if (idx <= n){
+                        box.hidden = false;
+                    } else {
+                        box.hidden = true;
+                        var inp = box.querySelector('input');
+                        if (inp) inp.value = '';
+                    }
+                });
+            }
+            if (subjectCount){
+                subjectCount.addEventListener('change', updateSubjects);
+                updateSubjects();
+            }
+
+            // ===== Anti double-submit =====
+            var form = document.getElementById('aed-form');
+            var btn  = document.getElementById('aed-submit');
+            if (form && btn){
+                form.addEventListener('submit', function () {
+                    btn.classList.add('is-loading');
+                    btn.setAttribute('disabled', 'disabled');
+                });
+            }
+        })();
+    </script>
+}

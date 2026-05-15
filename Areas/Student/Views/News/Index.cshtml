@@ -1,0 +1,769 @@
+﻿@model IEnumerable<WebApplication1.Models.Post>
+@{
+    ViewData["Title"] = "آخر الأخبار";
+}
+
+@*
+    ═══════════════════════════════════════════════════════════════
+      ملاحظات هامة:
+      • لا يوجد أي تعديل على الـ Backend ولا على الـ Model.
+      • نفس الـ asp-area / asp-controller / asp-action — لم تُلمس.
+      • التحسينات بصرية فقط (CSS + Vanilla JS باستخدام Native APIs).
+      • كل بيانات المستخدم تُعرض عبر Razor (@) → ترميز HTML تلقائي → آمن من XSS.
+      • البحث والفلترة والترتيب تتم على جانب العميل فقط (لا طلبات للسيرفر).
+      • يحترم prefers-reduced-motion.
+    ═══════════════════════════════════════════════════════════════
+*@
+
+<!-- ═══════════════════════════════════════
+     ENHANCED NEWS DESIGN (CSS only)
+═══════════════════════════════════════ -->
+<style>
+    /* ========== Tokens ========== */
+    :root {
+        --primary: #072C2C; --primary-hover: #0a3d3d; --primary-light: #105555;
+        --secondary: #FF5F03; --secondary-hover: #e55400; --secondary-light: #ff8c42;
+        --surface: #ffffff; --surface-alt: #f8fafc;
+        --text: #111827; --text-muted: #6B7280;
+        --border: #E5E7EB;
+        --shadow-sm: 0 4px 8px -2px rgba(7,44,44,.06);
+        --shadow-md: 0 12px 28px -10px rgba(7,44,44,.18);
+        --shadow-lg: 0 24px 50px -16px rgba(7,44,44,.28);
+        --radius-sm: 12px; --radius-md: 18px; --radius-lg: 26px;
+
+        --nx-ease: cubic-bezier(.22,.61,.36,1);
+        --nx-bounce: cubic-bezier(.34,1.56,.64,1);
+        --nx-glass-bg: rgba(255,255,255,.65);
+        --nx-grad-primary: linear-gradient(135deg,#072C2C 0%,#1e6b6b 100%);
+        --nx-grad-accent:  linear-gradient(135deg,#FF5F03 0%,#ffb060 100%);
+        --nx-grad-mix:     linear-gradient(120deg,#072C2C,#1e6b6b 45%,#FF5F03);
+    }
+
+    /* ========== Keyframes ========== */
+    @@keyframes nx-fadeUp   { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes nx-zoomIn   { from{opacity:0;transform:scale(.92)}        to{opacity:1;transform:scale(1)} }
+    @@keyframes nx-float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    @@keyframes nx-shimmer  { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @@keyframes nx-pulse    { 0%,100%{box-shadow:0 0 0 0 rgba(255,95,3,.45)} 50%{box-shadow:0 0 0 14px rgba(255,95,3,0)} }
+    @@keyframes nx-blob     {
+        0%,100% { border-radius:42% 58% 70% 30% / 45% 30% 70% 55%; }
+        50%     { border-radius:70% 30% 46% 54% / 30% 60% 40% 70%; }
+    }
+    @@keyframes nx-spinSlow { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+    /* ========== Reveal on scroll ========== */
+    .nx-reveal,.nx-reveal-zoom { opacity:0; will-change:opacity, transform; }
+    .nx-reveal.nx-in       { animation: nx-fadeUp .85s var(--nx-ease) forwards; }
+    .nx-reveal-zoom.nx-in  { animation: nx-zoomIn .8s var(--nx-ease) forwards; }
+    .nx-d1{animation-delay:.08s}.nx-d2{animation-delay:.16s}.nx-d3{animation-delay:.24s}
+    .nx-d4{animation-delay:.32s}.nx-d5{animation-delay:.40s}.nx-d6{animation-delay:.48s}
+
+    /* ========== HERO ========== */
+    .news-hero-enterprise {
+        background: var(--nx-grad-primary);
+        padding: 5.5rem 1rem 8rem;
+        position: relative; overflow: hidden;
+        margin-bottom: -3.5rem;
+        border-bottom-left-radius: 48px;
+        border-bottom-right-radius: 48px;
+        isolation: isolate;
+    }
+    .news-hero-enterprise::before{
+        content:""; position:absolute; inset:-20% -10% auto auto; width:520px; height:520px;
+        background: radial-gradient(circle, rgba(255,95,3,.35), transparent 60%);
+        filter: blur(40px); animation: nx-float 12s ease-in-out infinite;
+        z-index:-1;
+    }
+    .news-hero-enterprise::after{
+        content:""; position:absolute; inset:auto auto -20% -10%; width:380px; height:380px;
+        background: radial-gradient(circle, rgba(30,107,107,.55), transparent 65%);
+        filter: blur(40px); animation: nx-float 14s ease-in-out infinite reverse;
+        z-index:-1;
+    }
+    /* faint grid overlay */
+    .nx-hero-grid{
+        position:absolute; inset:0; pointer-events:none; z-index:-1;
+        background-image:
+          linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+        -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+    }
+
+    .hero-badge{
+        display:inline-flex; align-items:center; gap:8px;
+        padding:8px 22px;
+        background: rgba(255,255,255,.14);
+        backdrop-filter: blur(10px) saturate(140%);
+        -webkit-backdrop-filter: blur(10px) saturate(140%);
+        border:1px solid rgba(255,255,255,.25);
+        border-radius:50px; color:#fff; font-weight:600; font-size:.9rem;
+        margin-bottom:1.25rem; animation: nx-pulse 2.8s ease-out infinite;
+    }
+    .hero-badge i{ display:inline-block; animation: nx-spinSlow 12s linear infinite; }
+
+    .hero-title{
+        font-family:'Oswald', sans-serif; font-size:3rem; font-weight:700;
+        margin-bottom:.75rem; line-height:1.2; letter-spacing:1px;
+        background-image: linear-gradient(120deg, #fff, #ffd9b8 60%, #fff);
+        background-size: 220% auto;
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: nx-shimmer 7s linear infinite;
+    }
+    .hero-subtitle{
+        color:rgba(255,255,255,.88); font-size:1.15rem; font-weight:300;
+        max-width:640px; margin:0 auto; line-height:1.7;
+    }
+
+    /* Hero stats row */
+    .nx-hero-stats{
+        display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:2rem;
+    }
+    .nx-hero-stat{
+        background: rgba(255,255,255,.10);
+        backdrop-filter: blur(10px) saturate(140%);
+        -webkit-backdrop-filter: blur(10px) saturate(140%);
+        border:1px solid rgba(255,255,255,.18);
+        border-radius: var(--radius-sm);
+        padding:14px 22px; min-width:130px; text-align:center; color:#fff;
+        transition: transform .4s var(--nx-ease), background .4s ease;
+    }
+    .nx-hero-stat:hover{ transform: translateY(-4px); background: rgba(255,255,255,.18); }
+    .nx-stat-value{ font-family:'Oswald', sans-serif; font-size:1.75rem; font-weight:800; line-height:1; }
+    .nx-stat-label{ font-size:.82rem; opacity:.9; margin-top:4px; display:block; }
+
+    /* ========== Toolbar (search + view toggle) ========== */
+    .nx-toolbar{
+        display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+        background: var(--nx-glass-bg);
+        backdrop-filter: blur(12px) saturate(140%);
+        -webkit-backdrop-filter: blur(12px) saturate(140%);
+        border: 1.5px solid transparent;
+        background-image:
+          linear-gradient(var(--nx-glass-bg), var(--nx-glass-bg)),
+          var(--nx-grad-mix);
+        background-origin: border-box;
+        background-clip: padding-box, border-box;
+        border-radius: var(--radius-md);
+        padding: 14px 18px;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 1.75rem;
+    }
+    .nx-search{
+        flex:1 1 260px; position:relative; min-width:220px;
+    }
+    .nx-search i{
+        position:absolute; top:50%; right:14px; transform: translateY(-50%);
+        color: var(--text-muted); pointer-events:none;
+    }
+    .nx-search input{
+        width:100%; padding: 12px 42px 12px 16px;
+        border:1px solid var(--border); border-radius: 999px;
+        background:#fff; color:var(--text); font-size:.95rem;
+        transition: border-color .3s ease, box-shadow .3s ease;
+        outline:none;
+    }
+    .nx-search input:focus{
+        border-color: var(--secondary);
+        box-shadow: 0 0 0 4px rgba(255,95,3,.12);
+    }
+    .nx-toolbar-info{
+        font-size:.88rem; color: var(--text-muted); font-weight:600;
+    }
+    .nx-toolbar-info b{ color: var(--primary); }
+    .nx-view-toggle{
+        display:inline-flex; background:#fff; border:1px solid var(--border);
+        border-radius:999px; padding:4px; gap:2px;
+    }
+    .nx-view-toggle button{
+        border:0; background:transparent; cursor:pointer;
+        padding:7px 14px; border-radius:999px; color:var(--text-muted);
+        font-size:.85rem; font-weight:600;
+        transition: all .3s var(--nx-ease);
+    }
+    .nx-view-toggle button.active{
+        background: var(--nx-grad-primary); color:#fff;
+        box-shadow: 0 6px 14px -6px rgba(7,44,44,.5);
+    }
+
+    /* ========== Section header ========== */
+    .section-header-enterprise{
+        display:flex; align-items:center; gap:12px;
+        margin: 2rem 0 1.25rem;
+    }
+    .header-line{
+        width:5px; height:30px; border-radius:4px;
+        background: var(--nx-grad-accent);
+    }
+    .header-text{
+        font-family:'Oswald', sans-serif; font-size:1.4rem; font-weight:700;
+        color: var(--primary); margin:0;
+    }
+    .nx-header-line{ flex:1; height:1px; background: linear-gradient(to right, var(--border), transparent); }
+
+    /* ========== Featured post ========== */
+    .featured-post-enterprise{
+        position: relative;
+        background:
+          linear-gradient(var(--surface), var(--surface)) padding-box,
+          var(--nx-grad-mix) border-box;
+        border: 1.5px solid transparent;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg); overflow:hidden;
+        transition: transform .55s var(--nx-ease), box-shadow .55s ease;
+        z-index:2;
+    }
+    .featured-post-enterprise:hover{ transform: translateY(-6px); box-shadow: 0 30px 60px -22px rgba(7,44,44,.35); }
+    .featured-img-wrapper{ height: 360px; overflow:hidden; position: relative; }
+    .featured-img-wrapper img{
+        width:100%; height:100%; object-fit: cover;
+        transition: transform .9s var(--nx-ease);
+    }
+    .featured-post-enterprise:hover .featured-img-wrapper img{ transform: scale(1.06); }
+    .featured-img-wrapper::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(135deg, transparent 60%, rgba(7,44,44,.35));
+        pointer-events:none;
+    }
+    .nx-featured-badge{
+        position:absolute; top:18px; right:18px; z-index:2;
+        display:inline-flex; align-items:center; gap:6px;
+        padding:8px 14px; border-radius:999px;
+        background: var(--nx-grad-accent); color:#fff; font-weight:700; font-size:.8rem;
+        box-shadow: 0 8px 20px -6px rgba(255,95,3,.55);
+        animation: nx-pulse 2.6s ease-out infinite;
+    }
+    .featured-content-enterprise{
+        padding: 2.5rem;
+        display:flex; flex-direction:column; justify-content:center;
+        position: relative;
+    }
+    /* spotlight */
+    .featured-post-enterprise::after{
+        content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+        background: radial-gradient(420px circle at var(--mx,50%) var(--my,0%), rgba(255,95,3,.10), transparent 45%);
+        opacity:0; transition: opacity .4s ease;
+    }
+    .featured-post-enterprise:hover::after{ opacity:1; }
+
+    /* ========== Grid cards ========== */
+    .news-card-enterprise{
+        position: relative;
+        background:
+          linear-gradient(var(--surface), var(--surface)) padding-box,
+          linear-gradient(135deg, rgba(7,44,44,.18), rgba(255,95,3,.20)) border-box;
+        border:1px solid transparent;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        overflow:hidden; cursor:pointer;
+        height:100%; display:flex; flex-direction:column; text-decoration:none;
+        transition: transform .5s var(--nx-ease), box-shadow .5s ease, border-color .5s ease;
+        will-change: transform;
+    }
+    .news-card-enterprise:hover{ transform: translateY(-10px); box-shadow: var(--shadow-lg); }
+    .news-card-enterprise::after{
+        content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+        background: radial-gradient(380px circle at var(--mx,50%) var(--my,0%), rgba(255,95,3,.10), transparent 45%);
+        opacity:0; transition: opacity .4s ease;
+    }
+    .news-card-enterprise:hover::after{ opacity:1; }
+
+    .card-img-wrapper{ height:210px; overflow:hidden; position:relative; }
+    .card-img-wrapper img{
+        width:100%; height:100%; object-fit: cover;
+        transition: transform .8s var(--nx-ease);
+    }
+    .news-card-enterprise:hover .card-img-wrapper img{ transform: scale(1.10); }
+    .img-overlay{
+        position:absolute; inset:0;
+        background: linear-gradient(to top, rgba(7,44,44,.78), transparent 55%);
+        opacity:0; transition: opacity .35s ease;
+    }
+    .news-card-enterprise:hover .img-overlay{ opacity:1; }
+    .read-more-btn{
+        position:absolute; bottom:14px; right:14px;
+        background:#fff; color:var(--primary);
+        padding:8px 16px; border-radius:999px;
+        font-size:.82rem; font-weight:700;
+        transform: translateY(15px); opacity:0;
+        transition: transform .4s var(--nx-bounce), opacity .35s ease;
+        display:inline-flex; align-items:center; gap:6px;
+        box-shadow: 0 10px 22px -10px rgba(0,0,0,.45);
+    }
+    .news-card-enterprise:hover .read-more-btn{ transform: translateY(0); opacity:1; }
+    .card-body-enterprise{ padding: 1.35rem; flex:1; display:flex; flex-direction:column; }
+
+    /* Tags */
+    .tag-pill-enterprise{
+        display:inline-flex; align-items:center; gap:6px;
+        padding:5px 12px; border-radius:50px; font-size:.74rem; font-weight:700;
+        background: var(--surface-alt); color: var(--text-muted);
+        border:1px solid var(--border);
+        transition: border-color .3s ease, color .3s ease, background .3s ease;
+    }
+    .news-card-enterprise:hover .tag-pill-enterprise{
+        border-color: var(--secondary); color: var(--secondary);
+        background:#FFF7ED;
+    }
+
+    .news-title-enterprise{
+        font-family:'Oswald', sans-serif; font-size:1.15rem; font-weight:700;
+        color:var(--text); line-height:1.45; margin: .85rem 0 .55rem;
+        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+        transition: color .3s ease;
+    }
+    .news-card-enterprise:hover .news-title-enterprise{ color: var(--primary); }
+    .news-excerpt-enterprise{
+        color:var(--text-muted); font-size:.92rem; line-height:1.7;
+        margin-bottom:1rem; flex:1;
+        display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .nx-card-meta{
+        display:flex; align-items:center; justify-content:space-between;
+        padding-top: .75rem; border-top: 1px dashed var(--border);
+        font-size:.8rem; color: var(--text-muted); font-weight:600;
+    }
+    .nx-card-cta{
+        color: var(--secondary); display:inline-flex; align-items:center; gap:6px;
+        transition: gap .3s ease;
+    }
+    .news-card-enterprise:hover .nx-card-cta{ gap:10px; }
+
+    /* ========== List view ========== */
+    .nx-list .col-lg-4, .nx-list .col-md-6{ flex:0 0 100%; max-width:100%; }
+    .nx-list .news-card-enterprise{ flex-direction: row; height:auto; }
+    .nx-list .card-img-wrapper{ width: 280px; min-width:280px; height:auto; }
+    .nx-list .card-body-enterprise{ padding: 1.5rem 1.75rem; }
+    @@media (max-width: 768px){
+        .nx-list .news-card-enterprise{ flex-direction: column; }
+        .nx-list .card-img-wrapper{ width:100%; min-width:0; height:200px; }
+    }
+
+    /* ========== Empty State ========== */
+    .empty-state-enterprise{
+        background:
+          linear-gradient(var(--surface), var(--surface)) padding-box,
+          var(--nx-grad-mix) border-box;
+        border: 1.5px solid transparent;
+        border-radius: var(--radius-lg);
+        padding: 4.5rem 2rem; text-align:center;
+        box-shadow: var(--shadow-md); margin: 2rem 0;
+        position: relative; overflow:hidden;
+    }
+    .empty-state-enterprise::before{
+        content:""; position:absolute; inset:-30%; z-index:0;
+        background:
+          radial-gradient(35% 30% at 25% 30%, rgba(255,95,3,.15), transparent 60%),
+          radial-gradient(40% 35% at 75% 70%, rgba(30,107,107,.18), transparent 60%);
+        animation: nx-float 12s ease-in-out infinite;
+        pointer-events:none;
+    }
+    .empty-state-enterprise > *{ position: relative; z-index:1; }
+    .empty-icon{
+        width:110px; height:110px; margin:0 auto 1.5rem;
+        background: var(--nx-grad-primary);
+        color:#fff; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:3rem;
+        box-shadow: 0 14px 30px -10px rgba(7,44,44,.4);
+        animation: nx-blob 10s ease-in-out infinite, nx-float 6s ease-in-out infinite;
+    }
+
+    /* ========== Buttons ========== */
+    .btn-enterprise-primary{
+        display:inline-flex; align-items:center; justify-content:center; gap:8px;
+        padding:12px 26px; border-radius:50px; font-weight:700;
+        font-size:.95rem; text-decoration:none;
+        background: var(--nx-grad-accent); color:#fff; border:none;
+        background-size: 180% 180%; background-position: 0% 50%;
+        box-shadow: 0 12px 24px -8px rgba(255,95,3,.45);
+        transition: background-position .6s ease, transform .35s var(--nx-ease), box-shadow .35s ease;
+        position: relative; overflow:hidden;
+    }
+    .btn-enterprise-primary::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%);
+        transform: translateX(-100%); transition: transform .7s ease; pointer-events:none;
+    }
+    .btn-enterprise-primary:hover{
+        background-position: 100% 50%;
+        transform: translateY(-3px);
+        box-shadow: 0 18px 32px -10px rgba(255,95,3,.55);
+        color:#fff;
+    }
+    .btn-enterprise-primary:hover::after{ transform: translateX(100%); }
+
+    /* No-results message */
+    .nx-no-results{
+        display:none; text-align:center; padding: 3rem 1rem;
+        color: var(--text-muted);
+    }
+    .nx-no-results.show{ display:block; animation: nx-fadeUp .5s var(--nx-ease) both; }
+    .nx-no-results i{ font-size: 3rem; color: var(--secondary); margin-bottom: .75rem; opacity: .7; }
+
+    /* ========== Responsive ========== */
+    @@media (max-width: 768px) {
+        .news-hero-enterprise { padding: 3.5rem 1rem 6rem; border-radius: 0; }
+        .hero-title { font-size: 2.1rem; }
+        .featured-img-wrapper { height: 250px; }
+        .featured-content-enterprise { padding: 1.5rem; }
+        .nx-toolbar{ padding: 12px; }
+    }
+
+    /* ========== Reduced motion ========== */
+    @@media (prefers-reduced-motion: reduce){
+        .nx-reveal,.nx-reveal-zoom{ opacity:1 !important; animation:none !important; }
+        .news-hero-enterprise::before,.news-hero-enterprise::after,
+        .hero-badge,.hero-badge i,.hero-title,.empty-icon,
+        .nx-featured-badge { animation: none !important; }
+        *{ transition:none !important; }
+    }
+</style>
+
+<!-- ═══════════════════════════════════════
+     HERO
+═══════════════════════════════════════ -->
+<section class="news-hero-enterprise">
+    <div class="nx-hero-grid" aria-hidden="true"></div>
+
+    <div class="container text-center position-relative" style="z-index:2;">
+        <div class="nx-reveal-zoom nx-in">
+            <span class="hero-badge"><i class="fas fa-bullhorn"></i> آخر الأخبار</span>
+            <h1 class="hero-title">الأخبار والإعلانات</h1>
+            <p class="hero-subtitle">تابع أحدث الإعلانات والقرارات الخاصة بكلية التربية والفصول الصيفية</p>
+        </div>
+
+        <div class="nx-hero-stats nx-reveal nx-d2">
+            <div class="nx-hero-stat">
+                <div class="nx-stat-value" data-nx-counter="@Model.Count()">0</div>
+                <span class="nx-stat-label">إجمالي المنشورات</span>
+            </div>
+            <div class="nx-hero-stat">
+                <div class="nx-stat-value" data-nx-counter="@Model.Count(p => p.Attachments.Any())">0</div>
+                <span class="nx-stat-label">منشورات بمرفقات</span>
+            </div>
+            <div class="nx-hero-stat">
+                <div class="nx-stat-value">
+                    <i class="fas fa-clock" style="font-size:1.2rem;"></i>
+                </div>
+                <span class="nx-stat-label">تحديث مستمر</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════ -->
+<div class="container py-5" style="position:relative; z-index:3;">
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state-enterprise nx-reveal nx-in">
+            <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+            <h3 class="fw-bold" style="color:var(--primary); margin-bottom:.5rem;">لا توجد أخبار حالياً</h3>
+            <p class="text-muted" style="margin-bottom:1.5rem;">تابعنا قريباً لمعرفة آخر الأخبار والإعلانات</p>
+            <a asp-area="Student" asp-controller="Home" asp-action="Index" class="btn-enterprise-primary">
+                <i class="fas fa-home"></i> العودة للرئيسية
+            </a>
+        </div>
+    }
+    else
+    {
+        var postsList = Model.ToList();
+
+        @* ===== Toolbar (search + view toggle) — client-side only ===== *@
+        <div class="nx-toolbar nx-reveal nx-in" role="search" aria-label="بحث في الأخبار">
+            <div class="nx-search">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input id="nxSearchInput" type="search" placeholder="ابحث في عناوين ومحتوى الأخبار..." aria-label="بحث في الأخبار" autocomplete="off" />
+            </div>
+            <div class="nx-toolbar-info">
+                <span>النتائج:</span>
+                <b id="nxCount">@postsList.Count</b>
+                <span>من <b>@postsList.Count</b></span>
+            </div>
+            <div class="nx-view-toggle" role="tablist" aria-label="طريقة العرض">
+                <button type="button" class="active" data-nx-view="grid" aria-label="عرض شبكي" title="عرض شبكي">
+                    <i class="fas fa-th-large"></i>
+                </button>
+                <button type="button" data-nx-view="list" aria-label="عرض قائمة" title="عرض قائمة">
+                    <i class="fas fa-list-ul"></i>
+                </button>
+            </div>
+        </div>
+
+        @* ===== Featured Post ===== *@
+        @if (postsList.Count >= 1)
+        {
+            var featured = postsList[0];
+            var featImg = featured.Attachments.FirstOrDefault(a => a.Type == WebApplication1.Models.AttachmentType.Image);
+
+            <div class="mb-5 nx-reveal nx-d1" data-nx-card data-nx-title="@featured.Title" data-nx-content="@featured.Content">
+                <div class="section-header-enterprise">
+                    <div class="header-line"></div>
+                    <h2 class="header-text">المنشور المميز</h2>
+                    <span class="nx-header-line"></span>
+                </div>
+
+                <a asp-area="Student" asp-controller="News" asp-action="Details" asp-route-id="@featured.Id"
+                   class="featured-post-enterprise d-block text-decoration-none nx-spotlight">
+                    <div class="row g-0">
+                        <div class="col-lg-6">
+                            <div class="featured-img-wrapper">
+                                <span class="nx-featured-badge"><i class="fas fa-star"></i> مميز</span>
+                                @if (featImg != null)
+                                {
+                                    <img src="@featImg.FilePath" alt="@featured.Title" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <div style="height:100%; background:var(--nx-grad-primary); display:flex; align-items:center; justify-content:center; color:#fff; font-size:5rem;">
+                                        <i class="fas fa-graduation-cap"></i>
+                                    </div>
+                                }
+                                <div class="img-overlay"></div>
+                                <div class="read-more-btn">
+                                    <i class="fas fa-arrow-left"></i> اقرأ التفاصيل
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="featured-content-enterprise">
+                                <div class="d-flex gap-2 mb-3 flex-wrap">
+                                    <span class="tag-pill-enterprise" style="background:#FFF7ED; color:var(--secondary); border-color:#FED7AA;">
+                                        <i class="fas fa-star"></i> مميز
+                                    </span>
+                                    <span class="tag-pill-enterprise" style="background:#D1FAE5; color:#065F46; border-color:#A7F3D0;">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        @featured.CreatedAt.ToString("yyyy/MM/dd")
+                                    </span>
+                                    @if (featured.Attachments.Any())
+                                    {
+                                        <span class="tag-pill-enterprise">
+                                            <i class="fas fa-paperclip"></i>
+                                            @featured.Attachments.Count مرفق
+                                        </span>
+                                    }
+                                </div>
+                                <h3 class="fw-bold mb-3" style="color:var(--primary); line-height:1.4; font-size:1.6rem;">
+                                    @featured.Title
+                                </h3>
+                                <p class="text-muted mb-4" style="line-height:1.85; font-size:1rem;">
+                                    @(featured.Content.Length > 250 ? featured.Content.Substring(0, 250) + "..." : featured.Content)
+                                </p>
+                                <div>
+                                    <span class="btn-enterprise-primary">
+                                        <i class="fas fa-book-open"></i> اقرأ المزيد
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+
+        @* ===== Rest of posts ===== *@
+        @if (postsList.Count > 1)
+        {
+            <div class="section-header-enterprise">
+                <div class="header-line" style="background:var(--nx-grad-primary);"></div>
+                <h2 class="header-text">جميع الأخبار</h2>
+                <span class="nx-header-line"></span>
+            </div>
+
+            <div class="row g-4" id="nxGrid">
+                @for (int i = 1; i < postsList.Count; i++)
+                {
+                    var post = postsList[i];
+                    var img = post.Attachments.FirstOrDefault(a => a.Type == WebApplication1.Models.AttachmentType.Image);
+                    var delayClass = "nx-d" + ((i % 6) + 1);
+
+                    <div class="col-lg-4 col-md-6 nx-reveal @delayClass"
+                         data-nx-card
+                         data-nx-title="@post.Title"
+                         data-nx-content="@post.Content">
+                        <a asp-area="Student" asp-controller="News" asp-action="Details" asp-route-id="@post.Id"
+                           class="news-card-enterprise nx-spotlight">
+                            <div class="card-img-wrapper">
+                                @if (img != null)
+                                {
+                                    <img src="@img.FilePath" alt="@post.Title" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <div style="height:100%; background:var(--surface-alt); display:flex; align-items:center; justify-content:center; font-size:4rem; color:var(--text-muted);">
+                                        <i class="far fa-image"></i>
+                                    </div>
+                                }
+                                <div class="img-overlay"></div>
+                                <div class="read-more-btn">
+                                    <i class="fas fa-book-open"></i> فتح
+                                </div>
+                            </div>
+                            <div class="card-body-enterprise">
+                                <div class="d-flex gap-2 mb-2 flex-wrap">
+                                    <span class="tag-pill-enterprise">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        @post.CreatedAt.ToString("yyyy/MM/dd")
+                                    </span>
+                                    @if (post.Attachments.Any())
+                                    {
+                                        <span class="tag-pill-enterprise">
+                                            <i class="fas fa-paperclip"></i> @post.Attachments.Count
+                                        </span>
+                                    }
+                                </div>
+                                <h5 class="news-title-enterprise">@post.Title</h5>
+                                <p class="news-excerpt-enterprise">@post.Content</p>
+                                <div class="nx-card-meta">
+                                    <span><i class="far fa-clock"></i> @post.CreatedAt.ToString("HH:mm")</span>
+                                    <span class="nx-card-cta">
+                                        اقرأ المزيد <i class="fas fa-arrow-left"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <div class="nx-no-results" id="nxNoResults" role="status" aria-live="polite">
+                <i class="fas fa-search-minus"></i>
+                <h4 style="color:var(--primary); margin-bottom:.5rem;">لا توجد نتائج مطابقة</h4>
+                <p>جرّب كلمات بحث مختلفة</p>
+            </div>
+        }
+    }
+</div>
+
+@*
+    ═══════════════════════════════════════════════════════════════
+      Vanilla JS — لا يوجد innerHTML على بيانات خارجية ولا eval.
+      • IntersectionObserver لظهور البطاقات.
+      • Counter للأرقام في الـ Hero.
+      • فلتر فوري آمن (يقارن فقط في خواص data-nx-*).
+      • تبديل عرض شبكي/قائمة.
+      • Spotlight ناعم على البطاقات.
+      • يحترم prefers-reduced-motion.
+    ═══════════════════════════════════════════════════════════════
+*@
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            var prefersReduced = window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // 1) Reveal on scroll
+            var revealEls = document.querySelectorAll('.nx-reveal, .nx-reveal-zoom');
+            if (prefersReduced || !('IntersectionObserver' in window)) {
+                revealEls.forEach(function (el) { el.classList.add('nx-in'); });
+            } else {
+                var io = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('nx-in');
+                            io.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+                revealEls.forEach(function (el) { io.observe(el); });
+            }
+
+            // 2) Counters (يستخدم textContent فقط)
+            var counters = document.querySelectorAll('[data-nx-counter]');
+            function animateCount(el) {
+                var target = parseInt(el.getAttribute('data-nx-counter'), 10) || 0;
+                if (prefersReduced) { el.textContent = target; return; }
+                var dur = 1200, t0 = null;
+                function step(t) {
+                    if (!t0) t0 = t;
+                    var p = Math.min((t - t0) / dur, 1);
+                    var eased = 1 - Math.pow(1 - p, 3);
+                    el.textContent = Math.round(target * eased);
+                    if (p < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            }
+            if ('IntersectionObserver' in window) {
+                var ioC = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) { animateCount(entry.target); ioC.unobserve(entry.target); }
+                    });
+                }, { threshold: 0.4 });
+                counters.forEach(function (el) { ioC.observe(el); });
+            } else {
+                counters.forEach(animateCount);
+            }
+
+            // 3) Search filter (client-side, آمن — يستخدم classList فقط)
+            var input = document.getElementById('nxSearchInput');
+            var grid = document.getElementById('nxGrid');
+            var countEl = document.getElementById('nxCount');
+            var noResults = document.getElementById('nxNoResults');
+            var allCards = document.querySelectorAll('[data-nx-card]');
+            var totalCount = allCards.length;
+
+            function normalize(s) {
+                return (s || '').toString().toLowerCase().trim();
+            }
+            function applyFilter(q) {
+                q = normalize(q);
+                var visible = 0;
+                allCards.forEach(function (card) {
+                    var title   = normalize(card.getAttribute('data-nx-title'));
+                    var content = normalize(card.getAttribute('data-nx-content'));
+                    var match = !q || title.indexOf(q) !== -1 || content.indexOf(q) !== -1;
+                    card.style.display = match ? '' : 'none';
+                    if (match) visible++;
+                });
+                if (countEl) countEl.textContent = visible;
+                if (noResults) {
+                    if (visible === 0 && totalCount > 0) noResults.classList.add('show');
+                    else noResults.classList.remove('show');
+                }
+            }
+            if (input) {
+                var t;
+                input.addEventListener('input', function (e) {
+                    clearTimeout(t);
+                    var v = e.target.value;
+                    t = setTimeout(function () { applyFilter(v); }, 120);
+                });
+            }
+
+            // 4) View toggle (Grid / List)
+            var toggleBtns = document.querySelectorAll('.nx-view-toggle [data-nx-view]');
+            toggleBtns.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    toggleBtns.forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    var mode = btn.getAttribute('data-nx-view');
+                    if (grid) {
+                        if (mode === 'list') grid.classList.add('nx-list');
+                        else grid.classList.remove('nx-list');
+                    }
+                });
+            });
+
+            // 5) Spotlight follow on cards
+            if (!prefersReduced) {
+                var spots = document.querySelectorAll('.nx-spotlight');
+                spots.forEach(function (card) {
+                    card.addEventListener('mousemove', function (e) {
+                        var r = card.getBoundingClientRect();
+                        var x = ((e.clientX - r.left) / r.width) * 100;
+                        var y = ((e.clientY - r.top) / r.height) * 100;
+                        card.style.setProperty('--mx', x + '%');
+                        card.style.setProperty('--my', y + '%');
+                    });
+                });
+            }
+        })();
+    </script>
+}

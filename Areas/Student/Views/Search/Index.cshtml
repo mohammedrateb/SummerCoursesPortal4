@@ -1,0 +1,452 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      Search/Index.cshtml — نسخة محسّنة بالكامل
+      • Glassmorphism + Aurora header + animations.
+      • FA6 Free icons فقط.
+      • Class prefix: sx-* (Search Index).
+      • Auto-format للرقم القومي (يقبل أرقام عربية وإنجليزية).
+      • Anti-forgery + asp-* helpers محفوظة.
+      • صفر تعديل Backend.
+      • يحترم prefers-reduced-motion.
+    ═══════════════════════════════════════════════════════════════
+*@
+@{
+    ViewData["Title"] = "البحث عن بيانات";
+}
+
+<style>
+    .sx-scope{
+        --sx-primary:#072C2C; --sx-primary-2:#1e6b6b;
+        --sx-secondary:#FF5F03; --sx-secondary-2:#ffb060;
+        --sx-success:#16A34A; --sx-error:#DC2626;
+        --sx-text:#111827; --sx-muted:#6B7280; --sx-border:#D1D5DB;
+        --sx-surface:#fff; --sx-surface-alt:#f8fafc;
+        --sx-glass-bg: rgba(255,255,255,.78);
+        --sx-glass-border: rgba(255,255,255,.65);
+        --sx-shadow:0 10px 30px -16px rgba(7,44,44,.25);
+        --sx-shadow-lg:0 24px 60px -22px rgba(7,44,44,.35);
+        --sx-radius:14px; --sx-radius-lg:20px;
+        --sx-ease: cubic-bezier(.22,.61,.36,1);
+        --sx-bounce: cubic-bezier(.34,1.56,.64,1);
+        --sx-grad-primary: linear-gradient(135deg,#072C2C 0%,#1e6b6b 100%);
+        --sx-grad-accent:  linear-gradient(135deg,#FF5F03 0%,#ffb060 100%);
+        --sx-grad-mix:     linear-gradient(120deg,#072C2C,#1e6b6b 40%,#FF5F03);
+    }
+
+    @@keyframes sx-up   { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes sx-fade { from{opacity:0} to{opacity:1} }
+    @@keyframes sx-shine{ 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+    @@keyframes sx-pulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+    @@keyframes sx-shake{ 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+
+    .sx-anim  { animation: sx-up .55s var(--sx-ease) both; }
+    .sx-fade  { animation: sx-fade .6s var(--sx-ease) both; }
+    .sx-d1{animation-delay:.10s} .sx-d2{animation-delay:.20s} .sx-d3{animation-delay:.30s}
+
+    /* ========== Header ========== */
+    .sx-header{
+        position:relative; isolation:isolate; overflow:hidden;
+        padding: 3rem 1rem 3.5rem;
+        margin-bottom: 2rem;
+        color:#fff; text-align:center;
+        background:
+          radial-gradient(60% 80% at 80% 0%, rgba(255,95,3,.22), transparent 60%),
+          radial-gradient(60% 80% at 10% 100%, rgba(30,107,107,.30), transparent 60%),
+          linear-gradient(160deg, #051d1d 0%, #072C2C 60%, #0a3a3a 100%);
+        border-bottom: 4px solid var(--sx-secondary);
+    }
+    .sx-header::before{
+        content:""; position:absolute; inset:0; pointer-events:none; z-index:-1;
+        background-image:
+          linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 75%);
+        -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 75%);
+    }
+    .sx-header::after{
+        content:""; position:absolute; left:0; right:0; bottom:-1px; height:50px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 60' preserveAspectRatio='none'><path fill='%23f8fafc' d='M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z'/></svg>") no-repeat top center / cover;
+        pointer-events:none;
+    }
+    .sx-header-icon{
+        width:78px; height:78px;
+        background: var(--sx-grad-accent);
+        border-radius: 20px;
+        display:inline-flex; align-items:center; justify-content:center;
+        font-size: 30px; color:#fff;
+        margin-bottom: 1rem;
+        box-shadow: 0 14px 30px -8px rgba(255,95,3,.55);
+        position:relative; overflow:hidden;
+    }
+    .sx-header-icon::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.5) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: sx-shine 3.2s ease-in-out infinite;
+    }
+    .sx-header-title{
+        font-family:'Oswald',sans-serif;
+        font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+        font-weight:700; margin:0 0 .5rem; color:#fff; letter-spacing:.3px;
+    }
+    .sx-header-sub{ font-size:1rem; color:rgba(255,255,255,.85); margin:0; font-weight:500; }
+
+    /* ========== Card (Glass) ========== */
+    .sx-card{
+        position:relative;
+        background: var(--sx-glass-bg);
+        backdrop-filter: blur(14px) saturate(150%);
+        -webkit-backdrop-filter: blur(14px) saturate(150%);
+        border-radius: var(--sx-radius-lg);
+        box-shadow: var(--sx-shadow-lg);
+        border: 1px solid var(--sx-glass-border);
+        padding: 2.5rem; overflow: hidden;
+    }
+    .sx-card::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:4px;
+        background: var(--sx-grad-mix); opacity:.85;
+    }
+    @@media (max-width:576px){ .sx-card{ padding: 1.6rem; } }
+
+    /* ========== Search icon ========== */
+    .sx-search-icon{
+        width:72px; height:72px;
+        background: rgba(7,44,44,.07);
+        color: var(--sx-primary);
+        border-radius: 50%;
+        display:inline-flex; align-items:center; justify-content:center;
+        font-size: 1.6rem;
+        margin: 0 auto;
+        position: relative;
+        animation: sx-pulse 2.5s ease-in-out infinite;
+    }
+    .sx-search-icon::before{
+        content:""; position:absolute; inset:-4px; border-radius:50%;
+        background: conic-gradient(from 0deg, var(--sx-secondary), var(--sx-primary-2), var(--sx-secondary));
+        z-index:-1; opacity:.4;
+    }
+    .sx-step-title{
+        font-family:'Oswald',sans-serif;
+        font-size: 1.3rem; font-weight: 700;
+        background-image: var(--sx-grad-mix);
+        background-size: 220% auto;
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: .9rem 0 .35rem;
+    }
+
+    /* ========== Form ========== */
+    .sx-label{
+        display:flex; align-items:center; gap:8px;
+        font-weight:700; font-size:.95rem; color: var(--sx-text);
+        margin-bottom: .55rem;
+    }
+    .sx-label i{
+        color: var(--sx-primary); font-size:.95rem;
+        width:18px; text-align:center;
+    }
+    .sx-input{
+        width:100%;
+        padding: .9rem 1.1rem;
+        font-family:'Ubuntu',sans-serif;
+        font-size: 1.25rem;
+        color: var(--sx-text);
+        background: var(--sx-surface-alt);
+        border: 2px solid var(--sx-border);
+        border-radius: var(--sx-radius);
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
+        text-align: center;
+        letter-spacing: 3px;
+        font-variant-numeric: tabular-nums;
+    }
+    .sx-input::placeholder{ color: var(--sx-muted); letter-spacing: 1px; font-size: .95rem; }
+    .sx-input:focus{
+        outline:none;
+        border-color: var(--sx-secondary);
+        background:#fff;
+        box-shadow: 0 0 0 4px rgba(255,95,3,.15);
+        transform: translateY(-1px);
+    }
+    .sx-counter{
+        text-align:center; font-size:.8rem; color: var(--sx-muted);
+        margin-top:.4rem; font-weight:600; font-variant-numeric: tabular-nums;
+    }
+    .sx-counter strong{ color: var(--sx-primary); }
+    .sx-counter.is-ok strong{ color: var(--sx-success); }
+
+    /* ========== Button ========== */
+    .sx-btn{
+        background: var(--sx-grad-accent);
+        color:#fff; border:none;
+        border-radius: 50px;
+        font-family:'Ubuntu',sans-serif;
+        font-weight:700; font-size:1.05rem;
+        padding: .9rem 1.5rem; width:100%;
+        cursor:pointer;
+        display:inline-flex; align-items:center; justify-content:center; gap:10px;
+        box-shadow: 0 10px 22px -10px rgba(255,95,3,.55);
+        position:relative; overflow:hidden; isolation:isolate;
+        transition: transform .3s var(--sx-ease), box-shadow .3s ease, opacity .25s ease;
+    }
+    .sx-btn::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+        transform: translateX(-100%); transition: transform .8s ease;
+    }
+    .sx-btn:hover{ transform: translateY(-3px); box-shadow: 0 16px 30px -10px rgba(255,95,3,.7); color:#fff; }
+    .sx-btn:hover::after{ transform: translateX(100%); }
+    .sx-btn:active{ transform: translateY(-1px); }
+    .sx-btn:disabled{ opacity:.7; cursor: not-allowed; transform:none; }
+    .sx-btn .sx-spinner{ display:none; width:18px; height:18px; border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation: sx-spin 0.7s linear infinite; }
+    .sx-btn.is-loading .sx-spinner{ display:inline-block; }
+    .sx-btn.is-loading .sx-btn-icon{ display:none; }
+    @@keyframes sx-spin { to { transform: rotate(360deg); } }
+
+    /* ========== Alerts ========== */
+    .sx-alert{
+        display:flex; align-items:center; gap:10px;
+        padding: 1rem 1.15rem;
+        border-radius: var(--sx-radius);
+        font-size: .95rem; font-weight:600;
+        margin-bottom: 1.25rem;
+        border: 1px solid; position:relative; overflow:hidden;
+        animation: sx-up .35s var(--sx-ease);
+    }
+    .sx-alert i{ font-size:1.15rem; flex-shrink:0; }
+    .sx-alert-error  { background:#FEF2F2; border-color:#FECACA; color: var(--sx-error); }
+    .sx-alert-error.is-shake{ animation: sx-up .35s var(--sx-ease), sx-shake .5s ease .35s; }
+    .sx-alert-success{ background:#F0FDF4; border-color:#BBF7D0; color: var(--sx-success); }
+
+    /* ========== Not Found ========== */
+    .sx-notfound{
+        background: var(--sx-surface-alt);
+        border: 2px dashed var(--sx-border);
+        border-radius: var(--sx-radius-lg);
+        padding: 2rem 1.5rem;
+        text-align:center;
+        margin-bottom: 1.5rem;
+    }
+    .sx-notfound-icon{
+        width:80px; height:80px;
+        background: linear-gradient(135deg, #FEF3C7, #FED7AA);
+        color:#D97706;
+        border-radius:50%;
+        display:inline-flex; align-items:center; justify-content:center;
+        font-size: 2.4rem;
+        margin: 0 auto 1rem;
+        box-shadow: 0 8px 20px -8px rgba(217,119,6,.4);
+    }
+    .sx-notfound-title{
+        font-family:'Oswald',sans-serif;
+        font-size:1.25rem; font-weight:700;
+        color: var(--sx-primary);
+        margin: 0 0 .6rem;
+    }
+    .sx-notfound-desc{ color: var(--sx-muted); margin:0 0 1.25rem; line-height:1.7; }
+    .sx-notfound-cta{
+        display:inline-flex; align-items:center; justify-content:center; gap:8px;
+        padding: .75rem 1.5rem;
+        background: var(--sx-grad-accent); color:#fff;
+        border-radius: 50px; text-decoration:none; font-weight:700;
+        box-shadow: 0 10px 22px -10px rgba(255,95,3,.55);
+        transition: transform .3s var(--sx-ease), box-shadow .3s ease;
+    }
+    .sx-notfound-cta:hover{ transform: translateY(-2px); color:#fff; box-shadow: 0 14px 26px -10px rgba(255,95,3,.7); }
+
+    /* ========== Accessibility ========== */
+    .sx-input:focus-visible, .sx-btn:focus-visible, .sx-notfound-cta:focus-visible{
+        outline: 2px solid var(--sx-secondary); outline-offset: 3px;
+    }
+    @@media (prefers-reduced-motion: reduce){
+        .sx-scope *, .sx-scope *::before, .sx-scope *::after{
+            animation: none !important; transition: none !important;
+        }
+    }
+</style>
+
+<div class="sx-scope">
+
+    <section class="sx-header sx-fade">
+        <div class="container">
+            <div class="sx-header-icon" aria-hidden="true">
+                <i class="fas fa-magnifying-glass"></i>
+            </div>
+            <h1 class="sx-header-title">البحث عن بيانات</h1>
+            <p class="sx-header-sub">أدخل رقمك القومي للبحث عن بياناتك المسجلة</p>
+        </div>
+    </section>
+
+    <div class="container pb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+
+                @if (ViewBag.Error != null)
+                {
+                    <div class="sx-alert sx-alert-error is-shake" role="alert">
+                        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+                        <span>@ViewBag.Error</span>
+                    </div>
+                }
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="sx-alert sx-alert-success" role="status">
+                        <i class="fas fa-circle-check" aria-hidden="true"></i>
+                        <span>@TempData["SuccessMessage"]</span>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="sx-alert sx-alert-error is-shake" role="alert">
+                        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+                        <span>@TempData["ErrorMessage"]</span>
+                    </div>
+                }
+
+                @if (ViewBag.NotFound == true)
+                {
+                    <div class="sx-notfound sx-anim sx-d1">
+                        <div class="sx-notfound-icon" aria-hidden="true">
+                            <i class="fas fa-face-frown"></i>
+                        </div>
+                        <h2 class="sx-notfound-title">لم يتم العثور على بيانات</h2>
+                        <p class="sx-notfound-desc">
+                            الرقم القومي الذي أدخلته غير مسجل في النظام.<br />
+                            يمكنك التسجيل الآن لإنشاء سجل جديد.
+                        </p>
+                        <a asp-area="Student" asp-controller="Register" asp-action="Index"
+                           class="sx-notfound-cta">
+                            <i class="fas fa-user-plus" aria-hidden="true"></i>
+                            سجّل الآن
+                        </a>
+                    </div>
+                }
+
+                <div class="sx-card sx-anim sx-d1">
+                    <div class="text-center mb-4">
+                        <div class="sx-search-icon mb-3" aria-hidden="true">
+                            <i class="fas fa-magnifying-glass"></i>
+                        </div>
+                        <h2 class="sx-step-title">ابحث عن بياناتك</h2>
+                        <p class="text-muted mb-0" style="font-size:.95rem">أدخل رقمك القومي المكون من 14 رقم</p>
+                    </div>
+
+                    <form asp-area="Student" asp-controller="Search" asp-action="Index"
+                          method="post" id="sx-form" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="sx-label" for="sx-nationalId">
+                                <i class="fas fa-id-card" aria-hidden="true"></i>
+                                الرقم القومي <span class="text-danger" aria-hidden="true">*</span>
+                            </label>
+                            <input type="text" name="nationalId" id="sx-nationalId"
+                                   class="sx-input"
+                                   placeholder="مثال: 30012345678901"
+                                   maxlength="14" dir="ltr"
+                                   pattern="[0-9]{14}" inputmode="numeric"
+                                   autocomplete="off" required
+                                   value="@(ViewBag.NationalId ?? "")"
+                                   aria-describedby="sx-counter" />
+                            <div class="sx-counter" id="sx-counter">
+                                عدد الأرقام: <strong>0</strong> / 14
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="sx-label" for="sx-accessCode">
+                                <i class="fas fa-key" aria-hidden="true"></i>
+                                كود الوصول <span class="text-danger" aria-hidden="true">*</span>
+                            </label>
+                            <input type="text" name="accessCode" id="sx-accessCode"
+                                   class="sx-input"
+                                   placeholder="مثال: A7K3M9P2"
+                                   maxlength="8" dir="ltr"
+                                   autocomplete="off" required
+                                   style="text-transform:uppercase;font-family:'Ubuntu',monospace;" />
+                            <div class="sx-counter">
+                                <i class="fas fa-info-circle"></i>
+                                الكود مكوّن من 8 أحرف/أرقام (تجده فى صفحة التسجيل)
+                            </div>
+                        </div>
+
+                        <button type="submit" class="sx-btn" id="sx-submit">
+                            <span class="sx-spinner" aria-hidden="true"></span>
+                            <i class="fas fa-magnifying-glass sx-btn-icon" aria-hidden="true"></i>
+                            <span>بحث</span>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+            var input   = document.getElementById('sx-nationalId');
+            var counter = document.getElementById('sx-counter');
+            var form    = document.getElementById('sx-form');
+            var btn     = document.getElementById('sx-submit');
+            if (!input || !form || !btn) return;
+
+            // تحويل الأرقام العربية → إنجليزية + إزالة أي حرف غير رقمي
+            var arabicMap = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9',
+                              '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+            function normalize(v){
+                return String(v || '')
+                    .replace(/[٠-٩۰-۹]/g, function (d) { return arabicMap[d] || d; })
+                    .replace(/\D/g, '')
+                    .slice(0, 14);
+            }
+            function updateCounter(){
+                var len = input.value.length;
+                counter.firstElementChild
+                    ? (counter.firstElementChild.textContent = String(len))
+                    : null;
+                // محتوى آمن (textContent — مش innerHTML)
+                counter.textContent = '';
+                var lbl  = document.createTextNode('عدد الأرقام: ');
+                var num  = document.createElement('strong');
+                num.textContent = String(len);
+                var rest = document.createTextNode(' / 14');
+                counter.appendChild(lbl); counter.appendChild(num); counter.appendChild(rest);
+                if (len === 14) counter.classList.add('is-ok');
+                else counter.classList.remove('is-ok');
+            }
+
+            input.addEventListener('input', function () {
+                input.value = normalize(input.value);
+                updateCounter();
+            });
+            input.addEventListener('paste', function (e) {
+                try {
+                    var pasted = (e.clipboardData || window.clipboardData).getData('text');
+                    e.preventDefault();
+                    input.value = normalize(input.value + pasted);
+                    updateCounter();
+                } catch (err) { /* تجاهل */ }
+            });
+
+            form.addEventListener('submit', function (e) {
+                input.value = normalize(input.value);
+                updateCounter();
+                if (input.value.length !== 14) {
+                    e.preventDefault();
+                    input.focus();
+                    input.classList.add('is-shake');
+                    setTimeout(function(){ input.classList.remove('is-shake'); }, 500);
+                    return;
+                }
+                btn.classList.add('is-loading');
+                btn.setAttribute('disabled', 'disabled');
+            });
+
+            updateCounter();
+        })();
+    </script>
+}

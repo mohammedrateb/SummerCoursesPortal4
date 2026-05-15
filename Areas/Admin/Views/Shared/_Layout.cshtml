@@ -1,0 +1,694 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      Admin/_Layout.cshtml — Indigo Command Center Theme
+      • هوية بصرية مختلفة 100% عن صفحات الطلاب.
+      • Sidebar داكن بـ aurora + glow حول النشط.
+      • Topbar زجاجي + breadcrumb + notifications.
+      • Auto-active sidebar link detection.
+      • Mobile: drawer قابل للسحب من اليمين + overlay.
+      • Class prefix: adm-* (Admin).
+      • صفر Backend / asp-* helpers محفوظة.
+    ═══════════════════════════════════════════════════════════════
+*@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString()?.ToLower() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString()?.ToLower() ?? "";
+}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - لوحة الإدارة</title>
+
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="icon" type="image/x-icon" sizes="32x32" href="~/favicon.ico" asp-append-version="true" />
+    <link rel="apple-touch-icon" href="~/apple-touch-icon.png" asp-append-version="true" />
+
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@@300;400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@@11/dist/sweetalert2.min.css" rel="stylesheet" />
+
+    <style>
+            /* ═══════════ Design Tokens ═══════════ */
+            :root{
+                --adm-bg:        #0F172A;
+                --adm-bg-2:      #1E1B4B;
+                --adm-primary:   #4F46E5;   /* indigo-600 */
+                --adm-primary-2: #6366F1;
+                --adm-accent:    #06B6D4;   /* cyan-500 */
+                --adm-accent-2:  #22D3EE;
+                --adm-magenta:   #EC4899;
+                --adm-success:   #10B981;
+                --adm-warning:   #F59E0B;
+                --adm-danger:    #EF4444;
+
+                --adm-canvas:    #F1F5F9;
+                --adm-surface:   #FFFFFF;
+                --adm-text:      #0F172A;
+                --adm-muted:     #64748B;
+                --adm-border:    #E2E8F0;
+
+                --adm-radius:    14px;
+                --adm-radius-lg: 20px;
+                --adm-shadow:    0 4px 20px rgba(15,23,42,.08);
+                --adm-shadow-lg: 0 12px 40px rgba(15,23,42,.12);
+                --adm-shadow-glow: 0 0 0 4px rgba(79,70,229,.18);
+
+                --adm-sidebar-w: 270px;
+                --adm-topbar-h:  64px;
+
+                --adm-ease: cubic-bezier(.22,.61,.36,1);
+
+                --adm-grad-primary: linear-gradient(135deg,#4F46E5 0%,#06B6D4 100%);
+                --adm-grad-accent:  linear-gradient(135deg,#06B6D4 0%,#22D3EE 100%);
+                --adm-grad-magenta: linear-gradient(135deg,#EC4899 0%,#F472B6 100%);
+                --adm-grad-success: linear-gradient(135deg,#10B981 0%,#34D399 100%);
+                --adm-grad-warning: linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
+                --adm-grad-danger:  linear-gradient(135deg,#EF4444 0%,#F87171 100%);
+                --adm-grad-purple:  linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%);
+
+                --adm-sidebar-bg:
+                    radial-gradient(120% 60% at 20% 0%, rgba(79,70,229,.30), transparent 60%),
+                    radial-gradient(80% 50% at 80% 100%, rgba(6,182,212,.18), transparent 60%),
+                    linear-gradient(180deg, #1E1B4B 0%, #0F172A 100%);
+            }
+
+            * { font-family:'Cairo', sans-serif; box-sizing: border-box; }
+            html { scroll-behavior: smooth; }
+            body{
+                background: var(--adm-canvas);
+                min-height: 100vh; color: var(--adm-text);
+                margin: 0;
+                background-image:
+                    radial-gradient(circle at 0% 0%, rgba(79,70,229,.04), transparent 40%),
+                    radial-gradient(circle at 100% 100%, rgba(6,182,212,.04), transparent 40%);
+            }
+
+            /* ═══════════ Skip-to-content ═══════════ */
+            .adm-skip{
+                position: absolute; top:-44px; right:8px;
+                background:#fff; color: var(--adm-primary);
+                padding: 8px 14px; border-radius: 8px;
+                font-weight: 800; z-index: 9999;
+                transition: top .2s;
+                box-shadow: var(--adm-shadow-lg);
+            }
+            .adm-skip:focus{ top: 8px; outline: 2px solid var(--adm-accent); }
+
+            /* ═══════════ Animations ═══════════ */
+            @@keyframes adm-up   { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+            @@keyframes adm-fade { from{opacity:0} to{opacity:1} }
+            @@keyframes adm-pulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+            @@keyframes adm-shine{ 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+            @@keyframes adm-glow{
+                0%,100%{ box-shadow: 0 0 12px rgba(6,182,212,.4); }
+                50%    { box-shadow: 0 0 22px rgba(6,182,212,.7); }
+            }
+
+            /* ═══════════ Sidebar ═══════════ */
+            .adm-sidebar{
+                position: fixed;
+                top: 0; right: 0;
+                width: var(--adm-sidebar-w);
+                min-height: 100vh; height: 100vh;
+                z-index: 1040;
+                background: var(--adm-sidebar-bg);
+                box-shadow: -8px 0 32px rgba(0,0,0,.25);
+                display: flex; flex-direction: column;
+                transition: transform .35s var(--adm-ease);
+                isolation: isolate;
+                overflow: hidden;
+            }
+            .adm-sidebar::before{
+                content:""; position: absolute; inset: 0; pointer-events: none; z-index: -1;
+                background-image:
+                    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+                background-size: 36px 36px;
+                mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 80%);
+                -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 80%);
+            }
+            .adm-sidebar::after{
+                content:""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px;
+                background: linear-gradient(180deg, transparent, rgba(6,182,212,.5), transparent);
+            }
+
+            .adm-brand{
+                padding: 1.5rem 1.25rem 1.25rem;
+                text-align: center;
+                border-bottom: 1px solid rgba(255,255,255,.08);
+                position: relative;
+            }
+            .adm-brand-logo{
+                width: 56px; height: 56px;
+                border-radius: 16px;
+                background: var(--adm-grad-primary);
+                display: inline-flex; align-items: center; justify-content: center;
+                font-size: 1.4rem; color:#fff;
+                margin-bottom: .75rem;
+                box-shadow: 0 12px 28px -8px rgba(79,70,229,.7);
+                position: relative; overflow: hidden;
+            }
+            .adm-brand-logo::after{
+                content:""; position: absolute; inset: 0;
+                background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.5) 50%, transparent 70%);
+                transform: translateX(-100%);
+                animation: adm-shine 3.5s ease-in-out infinite;
+            }
+            .adm-brand-title{
+                color: #fff;
+                font-weight: 800;
+                margin: 0; font-size: 1.05rem;
+                letter-spacing: .3px;
+            }
+            .adm-brand-user{
+                color: rgba(255,255,255,.55);
+                font-size: .8rem;
+                display: block;
+                margin-top: 4px;
+                font-weight: 600;
+            }
+            .adm-brand-user i{ color: var(--adm-accent-2); margin-left: 4px; }
+
+            .adm-nav{
+                padding: 1rem .65rem;
+                flex: 1; min-height: 0;
+                overflow-y: auto;
+                display: flex; flex-direction: column; gap: 4px;
+            }
+            .adm-nav-section{
+                color: rgba(255,255,255,.35);
+                font-size: .72rem;
+                font-weight: 800;
+                padding: .75rem .85rem .25rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .adm-link{
+                display: flex; align-items: center; gap: 12px;
+                padding: .8rem .9rem;
+                color: rgba(255,255,255,.72);
+                text-decoration: none;
+                border-radius: 12px;
+                font-weight: 700; font-size: .94rem;
+                transition: background .25s ease, color .25s ease, transform .25s var(--adm-ease);
+                position: relative;
+                isolation: isolate;
+                overflow: hidden;
+            }
+            .adm-link i{
+                width: 22px; text-align: center;
+                font-size: 1rem;
+                color: rgba(255,255,255,.55);
+                transition: color .25s ease, transform .3s var(--adm-ease);
+            }
+            .adm-link:hover{
+                background: rgba(255,255,255,.06);
+                color: #fff;
+                transform: translateX(-3px);
+            }
+            .adm-link:hover i{ color: var(--adm-accent-2); transform: scale(1.1); }
+            .adm-link.is-active{
+                background: linear-gradient(90deg, rgba(79,70,229,.35), rgba(6,182,212,.18));
+                color: #fff;
+                box-shadow: inset 3px 0 0 var(--adm-accent), 0 4px 12px rgba(79,70,229,.25);
+            }
+            .adm-link.is-active i{ color: var(--adm-accent-2); }
+            .adm-link.is-active::after{
+                content:""; position: absolute; right: -2px; top: 50%;
+                width: 8px; height: 8px; border-radius: 50%;
+                background: var(--adm-accent-2);
+                transform: translateY(-50%);
+                box-shadow: 0 0 12px var(--adm-accent-2);
+                animation: adm-glow 2s ease-in-out infinite;
+            }
+            .adm-link:focus-visible{ outline: 2px solid var(--adm-accent-2); outline-offset: 2px; }
+
+            .adm-sidebar-footer{
+                padding: 1rem;
+                border-top: 1px solid rgba(255,255,255,.08);
+                background: rgba(0,0,0,.2);
+            }
+            .adm-logout{
+                width: 100%;
+                display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+                padding: .75rem;
+                background: rgba(239,68,68,.15);
+                color: #FCA5A5;
+                border: 1px solid rgba(239,68,68,.3);
+                border-radius: 12px;
+                font-weight: 800; font-size: .92rem;
+                font-family: 'Cairo', sans-serif;
+                cursor: pointer;
+                transition: background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease;
+            }
+            .adm-logout:hover{
+                background: var(--adm-grad-danger);
+                color: #fff; border-color: transparent;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 22px -6px rgba(239,68,68,.5);
+            }
+            .adm-logout:focus-visible{ outline: 2px solid #FCA5A5; outline-offset: 2px; }
+
+            /* ═══════════ Main / Topbar ═══════════ */
+            .adm-main{
+                margin-right: var(--adm-sidebar-w);
+                min-height: 100vh;
+                transition: margin .35s var(--adm-ease);
+            }
+            .adm-topbar{
+                background: rgba(255,255,255,.85);
+                backdrop-filter: blur(14px) saturate(160%);
+                -webkit-backdrop-filter: blur(14px) saturate(160%);
+                border-bottom: 1px solid var(--adm-border);
+                padding: .85rem 1.5rem;
+                display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+                position: sticky; top: 0; z-index: 100;
+                min-height: var(--adm-topbar-h);
+            }
+            .adm-topbar.is-scrolled{ box-shadow: 0 4px 20px rgba(15,23,42,.08); }
+
+            .adm-topbar-left{ display: flex; align-items: center; gap: 12px; min-width: 0; }
+            .adm-burger{
+                display: none;
+                width: 40px; height: 40px;
+                border-radius: 10px;
+                border: 1px solid var(--adm-border);
+                background: #fff; color: var(--adm-primary);
+                cursor: pointer; font-size: 1.05rem;
+                transition: background .2s ease, color .2s ease;
+            }
+            .adm-burger:hover{ background: var(--adm-grad-primary); color:#fff; border-color: transparent; }
+            .adm-page-title{
+                font-weight: 800; margin: 0;
+                font-size: 1.05rem;
+                color: var(--adm-text);
+                display: flex; align-items: center; gap: 10px;
+                min-width: 0;
+            }
+            .adm-page-title-icon{
+                width: 36px; height: 36px;
+                border-radius: 10px;
+                background: var(--adm-grad-primary);
+                color: #fff;
+                display: inline-flex; align-items: center; justify-content: center;
+                font-size: .95rem;
+                box-shadow: 0 6px 14px -6px rgba(79,70,229,.55);
+                flex-shrink: 0;
+            }
+            .adm-page-title-text{
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                min-width: 0;
+            }
+
+            .adm-topbar-right{ display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+            .adm-user-pill{
+                display: inline-flex; align-items: center; gap: 8px;
+                background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(6,182,212,.10));
+                color: var(--adm-primary);
+                padding: 6px 14px;
+                border-radius: 50px;
+                font-weight: 700; font-size: .85rem;
+                border: 1px solid rgba(79,70,229,.18);
+            }
+            .adm-user-pill .adm-avatar{
+                width: 22px; height: 22px;
+                border-radius: 50%;
+                background: var(--adm-grad-primary);
+                color:#fff;
+                display: inline-flex; align-items: center; justify-content: center;
+                font-size: .7rem;
+            }
+
+            .adm-content{ padding: 1.5rem; }
+            @@media (max-width: 768px){ .adm-content{ padding: 1rem; } }
+
+            /* ═══════════ Mobile drawer ═══════════ */
+            .adm-overlay{
+                position: fixed; inset: 0;
+                background: rgba(15,23,42,.55);
+                backdrop-filter: blur(4px);
+                opacity: 0; visibility: hidden;
+                transition: opacity .3s ease, visibility .3s ease;
+                z-index: 1035;
+            }
+            .adm-overlay.is-open{ opacity: 1; visibility: visible; }
+
+            @@media (max-width: 991.98px){
+                .adm-burger{ display: inline-flex; align-items: center; justify-content: center; }
+                .adm-main{ margin-right: 0; }
+                .adm-sidebar{ transform: translateX(100%); }
+                .adm-sidebar.is-open{ transform: translateX(0); }
+            }
+
+            /* ═══════════ Cards (shared admin) ═══════════ */
+            .card-admin, .adm-card{
+                border: none;
+                border-radius: var(--adm-radius-lg);
+                background: var(--adm-surface);
+                box-shadow: var(--adm-shadow);
+                transition: transform .3s var(--adm-ease), box-shadow .3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+            .card-admin:hover, .adm-card:hover{
+                transform: translateY(-3px);
+                box-shadow: var(--adm-shadow-lg);
+            }
+
+            /* ═══════════ Stat Cards (shared) ═══════════ */
+            .stat-card{
+                border-radius: var(--adm-radius-lg);
+                padding: 1.5rem;
+                color: #fff;
+                position: relative;
+                overflow: hidden;
+                transition: transform .3s var(--adm-ease), box-shadow .3s ease;
+            }
+            .stat-card:hover{ transform: translateY(-4px); box-shadow: 0 18px 40px -16px rgba(15,23,42,.3); }
+            .stat-card::before{
+                content:"";
+                position: absolute;
+                width: 140px; height: 140px;
+                background: rgba(255,255,255,.12);
+                border-radius: 50%;
+                top: -40px; left: -40px;
+                transition: transform .5s var(--adm-ease);
+            }
+            .stat-card::after{
+                content:"";
+                position: absolute;
+                width: 80px; height: 80px;
+                background: rgba(255,255,255,.08);
+                border-radius: 50%;
+                bottom: -20px; right: -10px;
+            }
+            .stat-card:hover::before{ transform: scale(1.3); }
+            .stat-card-blue   { background: var(--adm-grad-primary); }
+            .stat-card-green  { background: var(--adm-grad-success); }
+            .stat-card-red    { background: var(--adm-grad-danger); }
+            .stat-card-purple { background: var(--adm-grad-purple); }
+            .stat-card-cyan   { background: var(--adm-grad-accent); }
+            .stat-card-warning{ background: var(--adm-grad-warning); }
+
+            /* ═══════════ Table (shared) ═══════════ */
+            .table-admin{
+                border-collapse: separate;
+                border-spacing: 0;
+                margin: 0;
+                width: 100%;
+            }
+            .table-admin thead th{
+                background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
+                color: #fff;
+                font-weight: 800;
+                padding: 1rem;
+                border: none;
+                font-size: .88rem;
+                position: sticky; top: 0;
+                white-space: nowrap;
+            }
+            .table-admin thead th:first-child{ border-top-right-radius: 12px; }
+            .table-admin thead th:last-child{ border-top-left-radius: 12px; }
+            .table-admin tbody tr{ transition: background .2s ease, transform .2s ease; }
+            .table-admin tbody tr:hover{
+                background: linear-gradient(90deg, rgba(79,70,229,.04), rgba(6,182,212,.04));
+            }
+            .table-admin tbody td{
+                padding: .9rem 1rem;
+                vertical-align: middle;
+                border-bottom: 1px solid #F1F5F9;
+                font-size: .92rem;
+            }
+
+            /* ═══════════ Buttons (shared) ═══════════ */
+            .btn-admin-primary, .btn-admin-success, .btn-admin-danger, .btn-admin-warning{
+                border: none;
+                border-radius: 10px;
+                color: #fff;
+                font-weight: 800;
+                padding: 8px 20px;
+                font-family: 'Cairo', sans-serif;
+                transition: transform .25s var(--adm-ease), box-shadow .25s ease, opacity .2s;
+                display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+                position: relative; overflow: hidden;
+            }
+            .btn-admin-primary{ background: var(--adm-grad-primary); box-shadow: 0 8px 22px -8px rgba(79,70,229,.5); }
+            .btn-admin-success{ background: var(--adm-grad-success); box-shadow: 0 8px 22px -8px rgba(16,185,129,.5); }
+            .btn-admin-danger { background: var(--adm-grad-danger);  box-shadow: 0 8px 22px -8px rgba(239,68,68,.5); }
+            .btn-admin-warning{ background: var(--adm-grad-warning); box-shadow: 0 8px 22px -8px rgba(245,158,11,.5); color:#fff; }
+            .btn-admin-primary:hover, .btn-admin-success:hover, .btn-admin-danger:hover, .btn-admin-warning:hover{
+                transform: translateY(-2px); color: #fff;
+            }
+            .btn-admin-primary:hover{ box-shadow: 0 12px 28px -8px rgba(79,70,229,.7); }
+            .btn-admin-success:hover{ box-shadow: 0 12px 28px -8px rgba(16,185,129,.7); }
+            .btn-admin-danger:hover { box-shadow: 0 12px 28px -8px rgba(239,68,68,.7); }
+            .btn-admin-warning:hover{ box-shadow: 0 12px 28px -8px rgba(245,158,11,.7); }
+            .btn-admin-primary:focus-visible, .btn-admin-success:focus-visible,
+            .btn-admin-danger:focus-visible, .btn-admin-warning:focus-visible{
+                outline: 2px solid #fff;
+                outline-offset: 2px;
+                box-shadow: 0 0 0 4px rgba(79,70,229,.45);
+            }
+
+            /* ═══════════ Form Inputs (shared) ═══════════ */
+            .form-control, .form-select{
+                border-radius: 10px;
+                border: 2px solid #E2E8F0;
+                padding: 12px 14px;
+                font-family: 'Cairo', sans-serif;
+                transition: border-color .25s ease, box-shadow .25s ease, background .25s ease;
+            }
+            .form-control:focus, .form-select:focus{
+                border-color: var(--adm-primary);
+                box-shadow: var(--adm-shadow-glow);
+                outline: none;
+            }
+
+            /* ═══════════ Badges (shared) ═══════════ */
+            .badge-paid, .badge-unpaid{
+                color: #fff;
+                padding: 6px 14px;
+                border-radius: 20px;
+                font-weight: 800;
+                font-size: .8rem;
+                display: inline-flex; align-items: center; gap: 5px;
+            }
+            .badge-paid  { background: var(--adm-grad-success); }
+            .badge-unpaid{ background: var(--adm-grad-danger); }
+
+            /* ═══════════ Scrollbar ═══════════ */
+            ::-webkit-scrollbar{ width: 8px; height: 8px; }
+            ::-webkit-scrollbar-track{ background: #F1F5F9; }
+            ::-webkit-scrollbar-thumb{
+                background: var(--adm-grad-primary);
+                border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb:hover{ background: var(--adm-grad-accent); }
+            .adm-nav::-webkit-scrollbar-track{ background: rgba(0,0,0,.1); }
+            .adm-nav::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.18); }
+
+            /* ═══════════ Animations utilities ═══════════ */
+            .fade-in-up{ animation: adm-up .55s var(--adm-ease) both; }
+            .stagger-1{ animation-delay: .1s; } .stagger-2{ animation-delay: .2s; }
+            .stagger-3{ animation-delay: .3s; } .stagger-4{ animation-delay: .4s; }
+
+            /* ═══════════ Back to top ═══════════ */
+            .adm-totop{
+                position: fixed;
+                left: 1.25rem; bottom: 1.25rem;
+                width: 44px; height: 44px;
+                border-radius: 50%;
+                background: var(--adm-grad-primary);
+                color: #fff; border: none;
+                display: inline-flex; align-items: center; justify-content: center;
+                font-size: 1rem;
+                cursor: pointer;
+                box-shadow: 0 10px 24px -8px rgba(79,70,229,.6);
+                opacity: 0; visibility: hidden;
+                transition: opacity .3s ease, visibility .3s ease, transform .3s var(--adm-ease);
+                z-index: 1030;
+            }
+            .adm-totop.is-visible{ opacity: 1; visibility: visible; }
+            .adm-totop:hover{ transform: translateY(-3px); }
+
+            /* ═══════════ Reduced motion ═══════════ */
+            @@media (prefers-reduced-motion: reduce){
+                *, *::before, *::after{
+                    animation-duration: .001ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: .001ms !important;
+                    scroll-behavior: auto !important;
+                }
+            }
+    </style>
+</head>
+<body>
+
+    <a class="adm-skip" href="#adm-main-content">انتقل إلى المحتوى</a>
+
+    <!-- Sidebar -->
+    <aside class="adm-sidebar" id="adm-sidebar" aria-label="القائمة الجانبية">
+        <div class="adm-brand">
+            <div class="adm-brand-logo" aria-hidden="true">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+            <h1 class="adm-brand-title">لوحة الإدارة</h1>
+            <small class="adm-brand-user">
+                <i class="fas fa-circle-user" aria-hidden="true"></i>
+                @Context.Session.GetString("AdminUsername")
+            </small>
+        </div>
+
+        <nav class="adm-nav" aria-label="قوائم الإدارة">
+            <span class="adm-nav-section">عام</span>
+            <a asp-area="Admin" asp-controller="Home" asp-action="Index"
+                   class="adm-link @(currentController == "home" ? "is-active" : "")">
+                <i class="fas fa-gauge-high" aria-hidden="true"></i>
+                <span>الرئيسية</span>
+            </a>
+
+            <span class="adm-nav-section">إدارة</span>
+            <a asp-area="Admin" asp-controller="Students" asp-action="Index"
+                   class="adm-link @(currentController == "students" ? "is-active" : "")">
+                <i class="fas fa-users" aria-hidden="true"></i>
+                <span>الطلاب</span>
+            </a>
+            <a asp-area="Admin" asp-controller="Posts" asp-action="Index"
+                   class="adm-link @(currentController == "posts" ? "is-active" : "")">
+                <i class="fas fa-newspaper" aria-hidden="true"></i>
+                <span>المنشورات</span>
+            </a>
+
+            <a asp-area="Admin" asp-controller="Settings" asp-action="Index"
+                   class="adm-link @(currentController == "settings" ? "is-active" : "")">
+                <i class="fas fa-gear" aria-hidden="true"></i>
+                <span>إعدادات التسجيل</span>
+            </a>
+
+            <span class="adm-nav-section">حساب</span>
+            <a asp-area="Admin" asp-controller="Auth" asp-action="ChangePassword"
+                   class="adm-link @(currentController == "auth" ? "is-active" : "")">
+                <i class="fas fa-key" aria-hidden="true"></i>
+                <span>تغيير كلمة المرور</span>
+            </a>
+        </nav>
+
+        <div class="adm-sidebar-footer">
+            <form asp-area="Admin" asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="adm-logout">
+                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                    تسجيل الخروج
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Mobile overlay -->
+    <div class="adm-overlay" id="adm-overlay" aria-hidden="true"></div>
+
+    <!-- Main -->
+    <div class="adm-main">
+
+        <!-- Topbar -->
+        <header class="adm-topbar" id="adm-topbar">
+            <div class="adm-topbar-left">
+                <button type="button" class="adm-burger" id="adm-burger"
+                        aria-label="فتح القائمة" aria-controls="adm-sidebar" aria-expanded="false">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </button>
+                <h2 class="adm-page-title">
+                    <span class="adm-page-title-icon" aria-hidden="true">
+                        <i class="fas fa-shield-halved"></i>
+                    </span>
+                    <span class="adm-page-title-text">@ViewData["Title"]</span>
+                </h2>
+            </div>
+            <div class="adm-topbar-right">
+                <span class="adm-user-pill" title="المستخدم الحالي">
+                    <span class="adm-avatar" aria-hidden="true">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    <span>@Context.Session.GetString("AdminUsername")</span>
+                </span>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="adm-content" id="adm-main-content" tabindex="-1">
+            @RenderBody()
+        </main>
+
+    </div>
+
+    <!-- Back to top -->
+    <button type="button" class="adm-totop" id="adm-totop" aria-label="العودة إلى الأعلى">
+        <i class="fas fa-arrow-up" aria-hidden="true"></i>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@@11"></script>
+
+    <script>
+        (function () {
+        'use strict';
+
+        // ===== Mobile sidebar drawer =====
+        var sidebar = document.getElementById('adm-sidebar');
+        var overlay = document.getElementById('adm-overlay');
+        var burger  = document.getElementById('adm-burger');
+
+        function openSide(){
+        if (!sidebar || !overlay) return;
+        sidebar.classList.add('is-open');
+        overlay.classList.add('is-open');
+        if (burger) burger.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+        }
+        function closeSide(){
+        if (!sidebar || !overlay) return;
+        sidebar.classList.remove('is-open');
+        overlay.classList.remove('is-open');
+        if (burger) burger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+        }
+        if (burger)  burger.addEventListener('click', openSide);
+        if (overlay) overlay.addEventListener('click', closeSide);
+        document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeSide();
+        });
+        // إغلاق عند تغيير الحجم لـ desktop
+        window.addEventListener('resize', function () {
+        if (window.innerWidth >= 992) closeSide();
+        });
+
+        // ===== Topbar shadow on scroll =====
+        var topbar = document.getElementById('adm-topbar');
+        var totop  = document.getElementById('adm-totop');
+        function onScroll(){
+        var y = window.scrollY || 0;
+        if (topbar) topbar.classList.toggle('is-scrolled', y > 8);
+        if (totop)  totop.classList.toggle('is-visible', y > 400);
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+
+        // ===== Back to top =====
+        if (totop){
+        totop.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        }
+        })();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

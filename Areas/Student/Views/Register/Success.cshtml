@@ -1,0 +1,320 @@
+@*
+    ═══════════════════════════════════════════════════════════════
+      Register/Success.cshtml — يعرض كود الوصول بشكل بارز
+      • Glassmorphism + Confetti + Pulse + Draw checkmark
+      • كود وصول ضخم نسخه بالـ Clipboard + تحذير حفظه
+      • Class prefix: rs-* (Register Success)
+    ═══════════════════════════════════════════════════════════════
+*@
+@{
+    ViewData["Title"] = "تم التسجيل بنجاح";
+    var accessCode = ViewBag.AccessCode as string ?? string.Empty;
+    var studentName = ViewBag.StudentName as string ?? string.Empty;
+    var nationalId = ViewBag.NationalId as string ?? string.Empty;
+}
+
+<style>
+    .rs-scope{
+        --rs-primary:#072C2C; --rs-primary-2:#1e6b6b;
+        --rs-secondary:#FF5F03; --rs-secondary-2:#ffb060;
+        --rs-success:#16A34A; --rs-success-2:#22c55e;
+        --rs-danger:#DC2626;
+        --rs-text:#111827; --rs-muted:#6B7280; --rs-border:#D1D5DB;
+        --rs-radius:14px; --rs-radius-lg:22px;
+        --rs-ease: cubic-bezier(.22,.61,.36,1);
+        --rs-grad-success: linear-gradient(135deg,#16A34A 0%,#22c55e 100%);
+        --rs-grad-accent:  linear-gradient(135deg,#FF5F03 0%,#ffb060 100%);
+        --rs-grad-mix:     linear-gradient(120deg,#072C2C,#1e6b6b 40%,#FF5F03);
+    }
+
+    @@keyframes rs-up    { from{opacity:0;transform:translateY(20px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @@keyframes rs-pulseRing{
+        0%{box-shadow:0 0 0 0 rgba(22,163,74,.55)}
+        70%{box-shadow:0 0 0 22px rgba(22,163,74,0)}
+        100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}
+    }
+    @@keyframes rs-shine{ 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+    @@keyframes rs-draw { from{stroke-dashoffset:60} to{stroke-dashoffset:0} }
+    @@keyframes rs-confetti-fall{
+        0%{transform:translateY(-20px) rotate(0)} 10%{opacity:1}
+        100%{transform:translateY(120vh) rotate(720deg);opacity:0}
+    }
+    @@keyframes rs-shake{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+    .rs-bg{
+        position:relative; min-height: calc(100vh - 80px);
+        padding: 3rem 1rem; display:flex; align-items:center; justify-content:center;
+        background:
+          radial-gradient(60% 60% at 80% 0%, rgba(22,163,74,.10), transparent 60%),
+          radial-gradient(60% 60% at 10% 100%, rgba(7,44,44,.08), transparent 60%),
+          linear-gradient(160deg, #f8fafc 0%, #ffffff 60%, #f0fdf4 100%);
+        overflow: hidden;
+    }
+    .rs-confetti{ position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+    .rs-confetti span{
+        position:absolute; top:-20px; width:10px; height:14px; border-radius:2px;
+        animation: rs-confetti-fall 4.5s linear infinite; opacity:0;
+    }
+    .rs-confetti span:nth-child(1) { left:5%;  background:#FF5F03; animation-delay:.0s }
+    .rs-confetti span:nth-child(2) { left:15%; background:#16A34A; animation-delay:.4s }
+    .rs-confetti span:nth-child(3) { left:25%; background:#072C2C; animation-delay:.8s }
+    .rs-confetti span:nth-child(4) { left:35%; background:#22c55e; animation-delay:1.2s }
+    .rs-confetti span:nth-child(5) { left:45%; background:#ffb060; animation-delay:.2s }
+    .rs-confetti span:nth-child(6) { left:55%; background:#1e6b6b; animation-delay:.6s }
+    .rs-confetti span:nth-child(7) { left:65%; background:#FF5F03; animation-delay:1.0s }
+    .rs-confetti span:nth-child(8) { left:75%; background:#22c55e; animation-delay:1.4s }
+    .rs-confetti span:nth-child(9) { left:85%; background:#ffb060; animation-delay:.3s }
+    .rs-confetti span:nth-child(10){ left:95%; background:#16A34A; animation-delay:.7s }
+
+    .rs-card{
+        position: relative; z-index: 1;
+        max-width: 640px; width: 100%;
+        background: rgba(255,255,255,.92);
+        backdrop-filter: blur(14px) saturate(150%);
+        border-radius: var(--rs-radius-lg);
+        box-shadow: 0 24px 60px -22px rgba(7,44,44,.35);
+        border: 1px solid rgba(255,255,255,.65);
+        text-align:center; padding: 2.5rem 2rem;
+        overflow: hidden;
+        animation: rs-up .55s var(--rs-ease) both;
+    }
+    .rs-card::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:5px;
+        background: var(--rs-grad-success);
+    }
+
+    .rs-icon-wrap{ position:relative; width:110px; height:110px; margin:0 auto 1.2rem; display:inline-flex; align-items:center; justify-content:center; }
+    .rs-icon{
+        width:110px; height:110px; background:var(--rs-grad-success); border-radius:50%;
+        display:inline-flex; align-items:center; justify-content:center; color:#fff;
+        position:relative; overflow:hidden;
+        animation: rs-pulseRing 2.4s ease-out infinite;
+    }
+    .rs-icon::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+        transform: translateX(-100%); animation: rs-shine 3.5s ease-in-out infinite;
+    }
+    .rs-check-svg{ width:54px; height:54px; }
+    .rs-check-svg path{
+        fill:none; stroke:#fff; stroke-width:6; stroke-linecap:round; stroke-linejoin:round;
+        stroke-dasharray:60; stroke-dashoffset:60;
+        animation: rs-draw .8s var(--rs-ease) .35s forwards;
+    }
+
+    .rs-title{
+        font-family:'Oswald',sans-serif;
+        font-size: clamp(1.6rem, 3vw, 2.1rem);
+        font-weight:700; margin: 0 0 .6rem;
+        background-image: var(--rs-grad-mix);
+        background-size: 220% auto;
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .rs-msg{ color: var(--rs-muted); font-size: 1rem; line-height: 1.8; margin: 0 0 1.6rem; }
+    .rs-hello{ font-weight:700; color: var(--rs-primary); }
+
+    /* ── Access Code Display (الجزء الأهم) ── */
+    .rs-code-wrap{
+        margin: 1.5rem 0 1rem;
+        padding: 1.5rem 1.2rem;
+        background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+        border: 2px dashed var(--rs-secondary);
+        border-radius: var(--rs-radius);
+        position: relative;
+    }
+    .rs-code-label{
+        font-size: .9rem; color: var(--rs-primary); font-weight: 700;
+        margin-bottom: .6rem; display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .rs-code-label i{ color: var(--rs-secondary); font-size: 1.1rem; }
+    .rs-code-value{
+        font-family: 'Ubuntu', 'Courier New', monospace;
+        font-size: clamp(2rem, 6vw, 2.8rem);
+        font-weight: 800; letter-spacing: .4rem;
+        color: var(--rs-primary);
+        background: #fff;
+        padding: .8rem 1rem;
+        border-radius: 12px;
+        border: 2px solid var(--rs-primary);
+        display: inline-block;
+        min-width: 280px;
+        box-shadow: 0 6px 0 rgba(7,44,44,.18);
+        user-select: all;
+    }
+    .rs-copy-btn{
+        margin-top: .9rem;
+        background: var(--rs-primary); color: #fff;
+        border:none; border-radius: 50px;
+        padding: .6rem 1.2rem; font-weight: 700; font-size: .9rem;
+        cursor: pointer; display:inline-flex; align-items:center; gap:8px;
+        transition: transform .25s, background .25s;
+    }
+    .rs-copy-btn:hover{ background: var(--rs-secondary); transform: translateY(-2px); }
+    .rs-copy-btn.is-copied{ background: var(--rs-success); }
+
+    .rs-warn{
+        margin: 1rem 0 0;
+        padding: .9rem 1rem;
+        background: #FEF2F2; border:1px solid #FECACA; color: var(--rs-danger);
+        border-radius: 10px; font-size:.9rem; font-weight: 600;
+        display:flex; align-items:flex-start; gap:8px; text-align: start;
+    }
+    .rs-warn i{ flex-shrink:0; margin-top:2px; }
+
+    .rs-info-row{
+        display:flex; gap:10px; flex-wrap:wrap; margin-top:1rem;
+        background:#F8FAFC; border:1px solid #E2E8F0; border-radius: 10px;
+        padding:.8rem 1rem; font-size:.9rem; color: var(--rs-text);
+        text-align:start;
+    }
+    .rs-info-row strong{ color: var(--rs-primary); }
+    .rs-info-row code{
+        background:#fff; padding:2px 6px; border-radius:4px;
+        font-family:'Ubuntu',monospace; border:1px solid #E2E8F0;
+    }
+
+    .rs-actions{
+        display:flex; gap:10px;
+        justify-content:center; flex-wrap:wrap;
+        padding-top: 1.4rem; margin-top: 1.4rem;
+        border-top: 1px solid rgba(7,44,44,.08);
+    }
+    .rs-btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:8px;
+        padding: .8rem 1.4rem; font-weight: 700; font-size: .95rem;
+        border-radius: 50px; text-decoration: none; border: 2px solid transparent;
+        min-width: 170px; cursor: pointer;
+        transition: transform .3s var(--rs-ease), box-shadow .3s ease, background .3s ease;
+    }
+    .rs-btn-primary{
+        background: var(--rs-grad-accent); color:#fff;
+        box-shadow: 0 10px 22px -10px rgba(255,95,3,.55);
+    }
+    .rs-btn-primary:hover{ transform: translateY(-3px); color:#fff; }
+    .rs-btn-secondary{
+        background: #fff; color: var(--rs-primary); border-color: var(--rs-primary);
+    }
+    .rs-btn-secondary:hover{
+        background: var(--rs-primary); color:#fff; transform: translateY(-3px);
+    }
+
+    @@media (prefers-reduced-motion: reduce){
+        .rs-scope *, .rs-scope *::before, .rs-scope *::after{
+            animation: none !important; transition: none !important;
+        }
+        .rs-check-svg path{ stroke-dashoffset: 0 !important; }
+        .rs-confetti{ display: none !important; }
+    }
+</style>
+
+<div class="rs-scope">
+    <div class="rs-bg">
+        <div class="rs-confetti" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="rs-card" role="status" aria-live="polite">
+            <div class="rs-icon-wrap">
+                <div class="rs-icon" aria-hidden="true">
+                    <svg class="rs-check-svg" viewBox="0 0 64 64" aria-hidden="true">
+                        <path d="M14 33 L27 46 L50 19" />
+                    </svg>
+                </div>
+            </div>
+
+            <h1 class="rs-title">تم التسجيل بنجاح! 🎉</h1>
+
+            @if (!string.IsNullOrEmpty(studentName))
+            {
+                <p class="rs-msg">
+                    أهلاً <span class="rs-hello">@studentName</span>،
+                    تم تسجيل بياناتك فى النظام بنجاح.
+                </p>
+            }
+
+            <!-- ✨ كود الوصول -->
+            <div class="rs-code-wrap">
+                <div class="rs-code-label">
+                    <i class="fas fa-key"></i>
+                    كود الوصول الخاص بك
+                </div>
+                <div class="rs-code-value" id="rs-code" dir="ltr">@accessCode</div>
+                <button type="button" class="rs-copy-btn" id="rs-copy"
+                        data-code="@accessCode">
+                    <i class="fas fa-copy"></i>
+                    <span>نسخ الكود</span>
+                </button>
+            </div>
+
+            <!-- ⚠️ تحذير -->
+            <div class="rs-warn">
+                <i class="fas fa-triangle-exclamation"></i>
+                <div>
+                    <strong>احفظ هذا الكود فى مكان آمن!</strong>
+                    ستحتاجه (مع الرقم القومى) فى أى وقت تريد فيه البحث عن بياناتك أو تعديلها أو حذفها.
+                    <br />هذا الكود <strong>لن يظهر مرة أخرى</strong> بعد مغادرة هذه الصفحة.
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(nationalId))
+            {
+                <div class="rs-info-row">
+                    <div>
+                        <strong>الرقم القومى:</strong>
+                        <code dir="ltr">@nationalId</code>
+                    </div>
+                </div>
+            }
+
+            <div class="rs-actions">
+                <a asp-area="Student" asp-controller="Search" asp-action="Index"
+                   class="rs-btn rs-btn-primary">
+                    <i class="fas fa-magnifying-glass"></i>
+                    اذهب للبحث
+                </a>
+                <a asp-area="Student" asp-controller="Home" asp-action="Index"
+                   class="rs-btn rs-btn-secondary">
+                    <i class="fas fa-home"></i>
+                    الرئيسية
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function(){
+            var btn = document.getElementById('rs-copy');
+            if (!btn) return;
+            btn.addEventListener('click', function(){
+                var code = btn.getAttribute('data-code') || '';
+                if (!code) return;
+                var done = function(){
+                    btn.classList.add('is-copied');
+                    btn.querySelector('span').textContent = 'تم النسخ ✓';
+                    setTimeout(function(){
+                        btn.classList.remove('is-copied');
+                        btn.querySelector('span').textContent = 'نسخ الكود';
+                    }, 2200);
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(code).then(done).catch(function(){
+                        // Fallback
+                        var ta = document.createElement('textarea'); ta.value = code;
+                        document.body.appendChild(ta); ta.select();
+                        try { document.execCommand('copy'); done(); } catch(e){}
+                        document.body.removeChild(ta);
+                    });
+                } else {
+                    var ta = document.createElement('textarea'); ta.value = code;
+                    document.body.appendChild(ta); ta.select();
+                    try { document.execCommand('copy'); done(); } catch(e){}
+                    document.body.removeChild(ta);
+                }
+            });
+        })();
+    </script>
+}

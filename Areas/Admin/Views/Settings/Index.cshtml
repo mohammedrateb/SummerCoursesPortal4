@@ -1,0 +1,628 @@
+@*
+    ═══════════════════════════════════════════════════════════════
+      Admin/Settings/Index.cshtml — Indigo Command Center Theme
+      • نفس هوية لوحة الإدارة: Indigo + Cyan + Magenta + Purple.
+      • Class prefix: ast-* (Admin Settings).
+      • Glassmorphism stat card + toggle + dates + status panel.
+      • addEventListener (مفيش inline onclick).
+      • صفر تعديل في الـ Backend — كل asp-* و AntiForgeryToken محفوظة.
+    ═══════════════════════════════════════════════════════════════
+*@
+@model WebApplication1.Models.RegistrationConfig
+@{
+    ViewData["Title"] = "إعدادات التسجيل";
+    bool isEffectivelyOpen = Model.IsRegistrationOpen();
+}
+
+<style>
+    .ast-scope {
+        --ast-primary:   #4F46E5;
+        --ast-accent:    #06B6D4;
+        --ast-magenta:   #EC4899;
+        --ast-purple:    #8B5CF6;
+        --ast-success:   #10B981;
+        --ast-danger:    #EF4444;
+        --ast-warning:   #F59E0B;
+        --ast-text:      #0F172A;
+        --ast-muted:     #64748B;
+        --ast-border:    #E2E8F0;
+        --ast-ease:      cubic-bezier(.22,.61,.36,1);
+        --ast-grad:      linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
+        --ast-grad-dark: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
+        --ast-grad-success: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+        --ast-grad-danger:  linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+    }
+
+    @@keyframes ast-up    { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @@keyframes ast-shine { 0% { transform: translateX(-100%); } 60% { transform: translateX(100%); } 100% { transform: translateX(100%); } }
+    @@keyframes ast-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+    /* ═══ Alert ═══ */
+    .ast-alert {
+        border: none;
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        animation: ast-up .35s var(--ast-ease) both;
+    }
+    .ast-alert::before {
+        content: "";
+        position: absolute;
+        right: 0; top: 0; bottom: 0;
+        width: 5px;
+    }
+    .ast-alert-success { background: linear-gradient(135deg, #ECFDF5, #D1FAE5); color: #065F46; }
+    .ast-alert-success::before { background: var(--ast-success); }
+
+    .ast-alert-close {
+        margin-right: auto; margin-left: 0;
+        background: transparent; border: none;
+        cursor: pointer; color: inherit;
+        font-size: 1.25rem; font-weight: 900; opacity: .5; line-height: 1;
+        padding: 0 2px; flex-shrink: 0;
+        transition: opacity .2s ease;
+        font-family: sans-serif;
+    }
+    .ast-alert-close:hover { opacity: 1; }
+    .ast-alert-drain {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        height: 3px; background: currentColor; opacity: .2;
+        border-radius: 0 0 14px 14px;
+        transform-origin: right center;
+        animation: ast-drain 4.5s linear forwards;
+    }
+
+    /* ═══ Card ═══ */
+    .ast-card {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, .08);
+        position: relative;
+        overflow: hidden;
+        animation: ast-up .5s var(--ast-ease) both;
+    }
+    .ast-card::before {
+        content: "";
+        position: absolute; left: 0; right: 0; top: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--ast-primary), var(--ast-accent), var(--ast-magenta));
+    }
+    .ast-card-header {
+        background: var(--ast-grad-dark);
+        padding: 1.25rem 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+    .ast-card-header::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(60% 60% at 80% 20%, rgba(255,255,255,.08), transparent 60%);
+        pointer-events: none;
+    }
+    .ast-card-header-icon {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        background: rgba(255,255,255,.12);
+        backdrop-filter: blur(6px);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        color: #fff;
+        flex-shrink: 0;
+        position: relative; z-index: 1;
+    }
+    .ast-card-header-text { position: relative; z-index: 1; }
+    .ast-card-title {
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: #fff;
+        margin: 0 0 2px;
+    }
+    .ast-card-sub {
+        font-size: .78rem;
+        color: rgba(255,255,255,.6);
+        margin: 0;
+    }
+    .ast-card-body { padding: 1.75rem; }
+
+    /* ═══ Label ═══ */
+    .ast-label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-weight: 700;
+        font-size: .9rem;
+        color: var(--ast-text);
+        margin-bottom: .55rem;
+    }
+    .ast-label i { color: var(--ast-primary); width: 15px; text-align: center; }
+
+    /* ═══ Inputs ═══ */
+    .ast-input, .ast-textarea {
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--ast-border);
+        padding: 12px 14px;
+        font-family: 'Cairo', sans-serif;
+        background: #F8FAFC;
+        color: var(--ast-text);
+        font-size: .92rem;
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
+    }
+    .ast-input:focus, .ast-textarea:focus {
+        outline: none;
+        background: #fff;
+        border-color: var(--ast-primary);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, .15);
+        transform: translateY(-1px);
+    }
+    .ast-textarea { resize: vertical; min-height: 90px; }
+
+    /* ═══ Toggle ═══ */
+    .ast-toggle-wrap {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem;
+        border-radius: 16px;
+        border: 2px solid var(--ast-border);
+        background: #F8FAFC;
+        cursor: pointer;
+        transition: border-color .3s ease, background .3s ease, box-shadow .3s ease;
+    }
+    .ast-toggle-wrap:hover { box-shadow: 0 4px 14px rgba(79,70,229,.1); }
+    .ast-toggle-wrap.is-open   { border-color: var(--ast-success); background: #F0FDF4; }
+    .ast-toggle-wrap.is-closed { border-color: var(--ast-danger);  background: #FEF2F2; }
+
+    .ast-toggle { position: relative; width: 52px; height: 28px; flex-shrink: 0; }
+    .ast-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+    .ast-slider {
+        position: absolute;
+        inset: 0;
+        border-radius: 14px;
+        background: #CBD5E1;
+        cursor: pointer;
+        transition: background .3s ease;
+    }
+    .ast-slider::before {
+        content: "";
+        position: absolute;
+        height: 20px; width: 20px;
+        left: 4px; top: 4px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform .3s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    }
+    .ast-toggle input:checked + .ast-slider { background: var(--ast-success); }
+    .ast-toggle input:checked + .ast-slider::before { transform: translateX(24px); }
+
+    .ast-toggle-text { flex: 1; }
+    .ast-toggle-label { font-weight: 800; color: var(--ast-text); margin: 0 0 3px; font-size: .95rem; }
+    .ast-toggle-sub   { font-size: .8rem; color: var(--ast-muted); margin: 0; }
+
+    .ast-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: .35rem .85rem;
+        border-radius: 50px;
+        font-size: .8rem;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+    .ast-badge-open   { background: #DCFCE7; color: #166534; }
+    .ast-badge-closed { background: #FEE2E2; color: #991B1B; }
+
+    /* ═══ Hint ═══ */
+    .ast-hint {
+        font-size: .78rem;
+        color: var(--ast-muted);
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .ast-hint i { color: var(--ast-accent); }
+
+    /* ═══ Submit button ═══ */
+    .ast-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        padding: .85rem 2rem;
+        border-radius: 14px;
+        border: none;
+        background: var(--ast-grad);
+        color: #fff;
+        font-weight: 800;
+        font-size: .95rem;
+        font-family: 'Cairo', sans-serif;
+        cursor: pointer;
+        box-shadow: 0 10px 26px -8px rgba(79, 70, 229, .5);
+        position: relative;
+        overflow: hidden;
+        transition: transform .25s var(--ast-ease), box-shadow .25s ease;
+    }
+    .ast-btn::after {
+        content: "";
+        position: absolute; inset: 0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.25) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform .7s ease;
+    }
+    .ast-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px -8px rgba(79, 70, 229, .65); }
+    .ast-btn:hover::after { transform: translateX(100%); }
+
+    /* ═══ Status Panel (right card) ═══ */
+    .ast-status-card {
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, .1);
+        animation: ast-up .5s var(--ast-ease) .1s both;
+        position: relative;
+    }
+    .ast-status-header {
+        padding: 1.75rem;
+        color: #fff;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .ast-status-header.is-open   { background: var(--ast-grad-success); }
+    .ast-status-header.is-closed { background: var(--ast-grad-danger); }
+    .ast-status-header::after {
+        content: "";
+        position: absolute; inset: 0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.12) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: ast-shine 5s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .ast-status-emoji { font-size: 2.8rem; margin-bottom: .5rem; position: relative; z-index: 1; }
+    .ast-status-label { font-weight: 800; font-size: 1.25rem; margin: 0; position: relative; z-index: 1; }
+    .ast-status-desc  { font-size: .85rem; opacity: .85; margin: 4px 0 0; position: relative; z-index: 1; }
+
+    .ast-status-body { background: #fff; padding: 1.5rem; }
+
+    /* ── Schedule rows ── */
+    .ast-sched {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: .7rem 1rem;
+        border-radius: 12px;
+        font-size: .85rem;
+        font-weight: 700;
+        margin-bottom: .6rem;
+        border: 1px solid;
+    }
+    .ast-sched-open  { background: #F0FDF4; color: #166534; border-color: #BBF7D0; }
+    .ast-sched-close { background: #FEF2F2; color: #991B1B; border-color: #FECACA; }
+    .ast-sched i { flex-shrink: 0; }
+
+    /* ── Info box ── */
+    .ast-info-box {
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: .87rem;
+        font-weight: 700;
+        border: 1px solid;
+        margin-top: 1rem;
+    }
+    .ast-info-open   { background: #F0FDF4; color: #166534; border-color: #BBF7D0; }
+    .ast-info-closed { background: #FEF2F2; color: #991B1B; border-color: #FECACA; }
+
+    /* ── No schedule placeholder ── */
+    .ast-no-sched {
+        text-align: center;
+        padding: 1.25rem;
+        color: var(--ast-muted);
+        font-size: .85rem;
+        font-weight: 600;
+        border: 2px dashed var(--ast-border);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .ast-scope *, .ast-scope *::before, .ast-scope *::after {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+</style>
+
+<div class="ast-scope">
+
+    @* ── Success Alert ── *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="ast-alert ast-alert-success" role="status" id="ast-success-alert">
+            <i class="fas fa-circle-check" aria-hidden="true"></i>
+            <span>@TempData["SuccessMessage"]</span>
+            <button type="button" class="ast-alert-close" aria-label="إغلاق">×</button>
+            <span class="ast-alert-drain" aria-hidden="true"></span>
+        </div>
+    }
+
+    <div class="row g-4">
+
+        @* ══════════════════════════════════════════
+            العمود الأيمن — نموذج الإعدادات
+        ══════════════════════════════════════════ *@
+        <div class="col-lg-7">
+            <div class="ast-card">
+
+                <div class="ast-card-header">
+                    <div class="ast-card-header-icon" aria-hidden="true">
+                        <i class="fas fa-gear"></i>
+                    </div>
+                    <div class="ast-card-header-text">
+                        <h1 class="ast-card-title">إعدادات التسجيل</h1>
+                        <p class="ast-card-sub">تحكم في حالة التسجيل والجدول الزمني</p>
+                    </div>
+                </div>
+
+                <div class="ast-card-body">
+                    <form asp-area="Admin"
+                          asp-controller="Settings"
+                          asp-action="Index"
+                          method="post"
+                          id="ast-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Id" />
+
+                        @* ── Toggle: فتح / إغلاق ── *@
+                        <div class="mb-4">
+                            <label class="ast-toggle-wrap @(Model.IsOpen ? "is-open" : "is-closed")"
+                                   for="IsOpen"
+                                   id="ast-toggle-wrap">
+                                <div class="ast-toggle">
+                                    <input type="hidden" name="IsOpen" value="false" />
+                                    <input type="checkbox"
+                                           id="IsOpen"
+                                           name="IsOpen"
+                                           value="true"
+                                           @(Model.IsOpen ? "checked" : "") />
+                                    <span class="ast-slider"></span>
+                                </div>
+                                <div class="ast-toggle-text">
+                                    <p class="ast-toggle-label" id="ast-toggle-label">
+                                        @(Model.IsOpen ? "التسجيل مفتوح للطلاب" : "التسجيل مغلق")
+                                    </p>
+                                    <p class="ast-toggle-sub">عند التعطيل تُعرض رسالة الإغلاق أدناه للطلاب</p>
+                                </div>
+                                <span class="ast-badge @(Model.IsOpen ? "ast-badge-open" : "ast-badge-closed")"
+                                      id="ast-badge">
+                                    <i class="fas @(Model.IsOpen ? "fa-lock-open" : "fa-lock")"
+                                       id="ast-badge-icon"
+                                       aria-hidden="true"></i>
+                                    <span id="ast-badge-text">@(Model.IsOpen ? "مفتوح" : "مغلق")</span>
+                                </span>
+                            </label>
+                        </div>
+
+                        @* ── رسالة الإغلاق ── *@
+                        <div class="mb-4">
+                            <label class="ast-label" for="ClosedMessage">
+                                <i class="fas fa-comment-slash" aria-hidden="true"></i>
+                                رسالة الإغلاق
+                            </label>
+                            <textarea id="ClosedMessage"
+                                      name="ClosedMessage"
+                                      class="ast-textarea"
+                                      placeholder="اكتب رسالة الإغلاق التي ستظهر للطلاب...">@Model.ClosedMessage</textarea>
+                            <p class="ast-hint">
+                                <i class="fas fa-circle-info" aria-hidden="true"></i>
+                                تظهر فقط عند إغلاق التسجيل
+                            </p>
+                        </div>
+
+                        @* ── تواريخ تلقائية ── *@
+@*                         <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="ast-label" for="OpenAt">
+                                    <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                                    تاريخ الفتح التلقائي
+                                </label>
+                                <input type="datetime-local"
+                                       id="OpenAt"
+                                       name="OpenAt"
+                                       class="ast-input"
+                                       value="@(Model.OpenAt.HasValue ? Model.OpenAt.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
+                                <p class="ast-hint">
+                                    <i class="fas fa-circle-info" aria-hidden="true"></i>
+                                    اختياري — يُفتح تلقائياً عند هذا الوقت
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="ast-label" for="CloseAt">
+                                    <i class="fas fa-calendar-xmark" aria-hidden="true"></i>
+                                    تاريخ الإغلاق التلقائي
+                                </label>
+                                <input type="datetime-local"
+                                       id="CloseAt"
+                                       name="CloseAt"
+                                       class="ast-input"
+                                       value="@(Model.CloseAt.HasValue ? Model.CloseAt.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
+                                <p class="ast-hint">
+                                    <i class="fas fa-circle-info" aria-hidden="true"></i>
+                                    اختياري — يُغلق تلقائياً عند هذا الوقت
+                                </p>
+                            </div>
+                        </div> *@
+
+                        <button type="submit" class="ast-btn">
+                            <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+                            حفظ الإعدادات
+                        </button>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @* ══════════════════════════════════════════
+            العمود الأيسر — الحالة الفعلية الآن
+        ══════════════════════════════════════════ *@
+        <div class="col-lg-5">
+            <div class="ast-status-card">
+
+                @* ── Status Header ── *@
+                <div class="ast-status-header @(isEffectivelyOpen ? "is-open" : "is-closed")">
+                    <div class="ast-status-emoji" aria-hidden="true">
+                        @(isEffectivelyOpen ? "✅" : "🔒")
+                    </div>
+                    <p class="ast-status-label">
+                        @(isEffectivelyOpen ? "التسجيل مفتوح" : "التسجيل مغلق")
+                    </p>
+                    <p class="ast-status-desc">
+                        @(isEffectivelyOpen
+                            ? "يمكن للطلاب التسجيل الآن"
+                            : "لا يمكن للطلاب التسجيل حالياً")
+                    </p>
+                </div>
+
+                @* ── Status Body ── *@
+                <div class="ast-status-body">
+
+                    @* ── جدول زمني ── *@
+                   @*  @if (Model.OpenAt.HasValue || Model.CloseAt.HasValue)
+                    {
+                        @if (Model.OpenAt.HasValue)
+                        {
+                            <div class="ast-sched ast-sched-open">
+                                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                                <span>
+                                    يُفتح تلقائياً:
+                                    <strong>@Model.OpenAt.Value.ToString("dd/MM/yyyy — HH:mm")</strong>
+                                </span>
+                            </div>
+                        }
+                        @if (Model.CloseAt.HasValue)
+                        {
+                            <div class="ast-sched ast-sched-close">
+                                <i class="fas fa-calendar-xmark" aria-hidden="true"></i>
+                                <span>
+                                    يُغلق تلقائياً:
+                                    <strong>@Model.CloseAt.Value.ToString("dd/MM/yyyy — HH:mm")</strong>
+                                </span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="ast-no-sched">
+                            <i class="fas fa-calendar-days" style="color:var(--ast-muted)" aria-hidden="true"></i>
+                            <span style="margin-right:6px">لا يوجد جدول زمني مُحدَّد</span>
+                        </div>
+                    }
+ *@
+                    @* ── Info box ── *@
+                    <div class="ast-info-box @(isEffectivelyOpen ? "ast-info-open" : "ast-info-closed")">
+                        <i class="fas fa-circle-info" style="margin-top:2px; flex-shrink:0" aria-hidden="true"></i>
+                        <span>
+                            @if (isEffectivelyOpen)
+                            {
+                                <text>يرى الطلاب نموذج التسجيل حالياً.</text>
+                            }
+                            else
+                            {
+                                <text>
+                                    يرى الطلاب رسالة الإغلاق:
+                                    <em>"@Model.ClosedMessage"</em>
+                                </text>
+                            }
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    // ── Toggle UI sync ────────────────────────────────────────────
+    var checkbox  = document.getElementById('IsOpen');
+    var wrap      = document.getElementById('ast-toggle-wrap');
+    var label     = document.getElementById('ast-toggle-label');
+    var badge     = document.getElementById('ast-badge');
+    var badgeIcon = document.getElementById('ast-badge-icon');
+    var badgeText = document.getElementById('ast-badge-text');
+
+    function syncToggle(isChecked) {
+        if (isChecked) {
+            wrap.classList.add('is-open');
+            wrap.classList.remove('is-closed');
+            label.textContent       = 'التسجيل مفتوح للطلاب';
+            badge.className         = 'ast-badge ast-badge-open';
+            badgeIcon.className     = 'fas fa-lock-open';
+            badgeText.textContent   = 'مفتوح';
+        } else {
+            wrap.classList.add('is-closed');
+            wrap.classList.remove('is-open');
+            label.textContent       = 'التسجيل مغلق';
+            badge.className         = 'ast-badge ast-badge-closed';
+            badgeIcon.className     = 'fas fa-lock';
+            badgeText.textContent   = 'مغلق';
+        }
+    }
+
+    if (checkbox) {
+        checkbox.addEventListener('change', function () {
+            syncToggle(this.checked);
+        });
+    }
+
+    // ── Success alert auto-dismiss ────────────────────────────────
+    var successAlert = document.getElementById('ast-success-alert');
+    if (successAlert) {
+        var timer = setTimeout(function () { dismissAlert(successAlert); }, 4500);
+        var closeBtn = successAlert.querySelector('.ast-alert-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                clearTimeout(timer);
+                dismissAlert(successAlert);
+            });
+        }
+    }
+
+    function dismissAlert(el) {
+        el.style.transition = 'opacity .4s ease, transform .4s ease, max-height .4s ease, margin-bottom .4s ease, padding .4s ease';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(20px)';
+        el.style.maxHeight = el.offsetHeight + 'px';
+        setTimeout(function () {
+            el.style.maxHeight      = '0';
+            el.style.marginBottom   = '0';
+            el.style.paddingTop     = '0';
+            el.style.paddingBottom  = '0';
+            el.style.overflow       = 'hidden';
+            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 420);
+        }, 400);
+    }
+
+}());
+</script>
+}

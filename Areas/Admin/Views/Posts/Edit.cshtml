@@ -1,0 +1,871 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      Admin/Posts/Edit.cshtml — Indigo Command Center Theme
+      • نفس هوية لوحة الإدارة: Indigo + Cyan + Magenta + Purple.
+      • Glassmorphism step cards + shine icons.
+      • Class prefix: ape-* (Admin Post Edit).
+
+      🔧 نفس إصلاح التضمين الموجود في Create:
+        - تحويل تلقائي لروابط YouTube / Google Drive لـ embed صحيح.
+        - Live preview للروابط.
+        - الـ field اسمه NewEmbedUrls زي ما هو — صفر تعديل في الـ Backend.
+
+      • Anti double-submit + addEventListener (مفيش inline onclick).
+      • صفر تعديل في الـ Backend — كل asp-* و AntiForgeryToken محفوظة.
+    ═══════════════════════════════════════════════════════════════
+*@
+@model WebApplication1.ViewModels.Admin.EditPostViewModel
+@{
+    ViewData["Title"] = "تعديل المنشور";
+    var hasExisting = Model.ExistingAttachments.Any();
+    var newFilesNum = hasExisting ? "4" : "3";
+    var newEmbedNum = hasExisting ? "5" : "4";
+}
+
+<style>
+    .ape-scope{
+        --ape-primary:#4F46E5;
+        --ape-accent:#06B6D4;
+        --ape-magenta:#EC4899;
+        --ape-purple:#8B5CF6;
+        --ape-success:#10B981;
+        --ape-warning:#F59E0B;
+        --ape-danger:#EF4444;
+        --ape-text:#0F172A;
+        --ape-muted:#64748B;
+        --ape-border:#E2E8F0;
+        --ape-ease: cubic-bezier(.22,.61,.36,1);
+        --ape-grad-primary: linear-gradient(135deg,#4F46E5 0%,#06B6D4 100%);
+        --ape-grad-purple:  linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%);
+        --ape-grad-success: linear-gradient(135deg,#10B981 0%,#34D399 100%);
+        --ape-grad-warning: linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
+    }
+
+    @@keyframes ape-up   { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes ape-shine{ 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+    @@keyframes ape-spin { to { transform: rotate(360deg); } }
+    @@keyframes ape-pop  { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+
+    .ape-header{
+        display: flex; align-items: center; gap: 14px;
+        margin-bottom: 1.5rem;
+        animation: ape-up .55s var(--ape-ease) both;
+    }
+    .ape-back-btn{
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        background: #fff;
+        border: 2px solid var(--ape-border);
+        color: var(--ape-text);
+        display: inline-flex; align-items: center; justify-content: center;
+        text-decoration: none;
+        font-weight: 700;
+        transition: background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease;
+    }
+    .ape-back-btn:hover{
+        background: #F8FAFC;
+        border-color: var(--ape-primary);
+        color: var(--ape-primary);
+        transform: translateX(2px);
+    }
+    .ape-back-btn:focus-visible{ outline: 2px solid var(--ape-accent); outline-offset: 2px; }
+
+    .ape-header-icon{
+        width: 48px; height: 48px;
+        border-radius: 14px;
+        background: var(--ape-grad-primary);
+        color: #fff; font-size: 1.2rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: 0 12px 24px -8px rgba(79,70,229,.5);
+        position: relative; overflow: hidden;
+    }
+    .ape-header-icon::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: ape-shine 3s ease-in-out infinite;
+    }
+    .ape-header-text h1{
+        font-weight: 800; margin: 0;
+        color: var(--ape-text); font-size: 1.3rem;
+    }
+    .ape-header-text small{ color: var(--ape-muted); font-weight: 600; }
+
+    .ape-step{
+        position: relative;
+        background: #fff;
+        border-radius: 20px;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 6px 24px rgba(15,23,42,.07);
+        overflow: hidden;
+        animation: ape-up .55s var(--ape-ease) both;
+    }
+    .ape-step::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:4px;
+    }
+    .ape-step-1::before{ background: var(--ape-grad-primary); }
+    .ape-step-2::before{ background: var(--ape-grad-purple); }
+    .ape-step-3::before{ background: var(--ape-grad-success); }
+    .ape-step-4::before{ background: var(--ape-grad-success); }
+    .ape-step-5::before{ background: var(--ape-grad-warning); }
+
+    .ape-step-head{
+        padding: 1.25rem 1.5rem;
+        display: flex; align-items: center; gap: 14px;
+        background: #F8FAFC;
+    }
+    .ape-step-num{
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        color: #fff;
+        font-weight: 800;
+        font-size: 1rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 6px 14px -6px rgba(0,0,0,.3);
+    }
+    .ape-step-1 .ape-step-num{ background: var(--ape-grad-primary); }
+    .ape-step-2 .ape-step-num{ background: var(--ape-grad-purple); }
+    .ape-step-3 .ape-step-num{ background: var(--ape-grad-success); }
+    .ape-step-4 .ape-step-num{ background: var(--ape-grad-success); }
+    .ape-step-5 .ape-step-num{ background: var(--ape-grad-warning); }
+
+    .ape-step-title{ font-weight: 800; color: var(--ape-text); margin: 0; font-size: 1rem; }
+    .ape-step-sub{ color: var(--ape-muted); font-size: .82rem; }
+    .ape-step-body{ padding: 1.5rem; border-top: 1px solid #F1F5F9; }
+
+    .ape-input, .ape-textarea{
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--ape-border);
+        padding: 13px 16px;
+        font-family: 'Cairo', sans-serif;
+        background: #F8FAFC;
+        color: var(--ape-text);
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
+    }
+    .ape-input:focus, .ape-textarea:focus{
+        outline: none;
+        background: #fff;
+        border-color: var(--ape-primary);
+        box-shadow: 0 0 0 4px rgba(79,70,229,.15);
+        transform: translateY(-1px);
+    }
+    .ape-input{ font-size: 1.05rem; font-weight: 700; }
+    .ape-textarea{ font-size: .98rem; line-height: 1.85; resize: vertical; }
+    .ape-step-2 .ape-textarea:focus{ border-color: var(--ape-purple); box-shadow: 0 0 0 4px rgba(139,92,246,.15); }
+    .ape-step-5 .ape-textarea:focus{ border-color: var(--ape-warning); box-shadow: 0 0 0 4px rgba(245,158,11,.15); }
+
+    .ape-pill{
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 12px;
+        border-radius: 50px;
+        background: rgba(79,70,229,.10);
+        color: var(--ape-primary);
+        font-size: .78rem; font-weight: 800;
+        margin-right: .5rem;
+        border: 1px solid rgba(79,70,229,.2);
+    }
+
+    /* ═══════════ Existing Attachments ═══════════ */
+    .ape-att-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .ape-att{
+        position: relative;
+        border-radius: 14px;
+        overflow: hidden;
+        height: 130px;
+        box-shadow: 0 4px 14px rgba(0,0,0,.08);
+        transition: transform .25s ease;
+    }
+    .ape-att:hover{ transform: translateY(-3px); }
+    .ape-att img{ width: 100%; height: 100%; object-fit: cover; }
+    .ape-att-caption{
+        position: absolute; bottom: 0; right: 0; left: 0;
+        background: linear-gradient(transparent, rgba(0,0,0,.75));
+        color: #fff;
+        padding: 8px 10px;
+        font-size: .75rem;
+        font-weight: 700;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ape-att-icon{
+        height: 100%;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        padding: 1rem;
+        text-align: center;
+        border: 2px solid var(--ape-border);
+    }
+    .ape-att-icon i{ font-size: 2.4rem; margin-bottom: .5rem; }
+    .ape-att-icon small{
+        font-size: .75rem; font-weight: 700;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        max-width: 100%;
+        color: var(--ape-text);
+    }
+    .ape-att-pdf  { background:#FEF2F2; border-color:#FECACA; color:#B91C1C; }
+    .ape-att-video{ background:#F5F3FF; border-color:#DDD6FE; color:#6D28D9; }
+    .ape-att-embed{ background:#FFFBEB; border-color:#FDE68A; color:#92400E; }
+    .ape-att-other{ background:#F8FAFC; border-color:#E2E8F0; color:var(--ape-muted); }
+
+    /* ═══════════ Delete-attachment toggle ═══════════ */
+    .ape-att-del{
+        position: absolute; top: 6px; left: 6px;
+        z-index: 3;
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(239, 68, 68, .92);
+        color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(239,68,68,.45);
+        opacity: 0;
+        transition: opacity .2s ease, transform .2s ease, background .2s ease;
+        font-size: .85rem;
+    }
+    .ape-att:hover .ape-att-del,
+    .ape-att-del:focus-visible{ opacity: 1; }
+    .ape-att-del:hover{ background:#DC2626; transform: scale(1.08); }
+
+    .ape-att-marked{
+        position: absolute; inset: 0;
+        z-index: 4;
+        background: rgba(239, 68, 68, .82);
+        color: #fff;
+        display: none;
+        flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 8px;
+        padding: 8px;
+        font-weight: 700;
+        text-align: center;
+        backdrop-filter: blur(2px);
+        animation: ape-pop .25s var(--ape-ease);
+    }
+    .ape-att-marked span{ font-size: .85rem; }
+    .ape-att-marked i{ margin-inline-end: 4px; }
+    .ape-att-undo{
+        background: #fff;
+        color: #B91C1C;
+        border: none;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: .75rem;
+        cursor: pointer;
+        transition: background .2s ease;
+    }
+    .ape-att-undo:hover{ background:#FEE2E2; }
+    .ape-att.is-marked .ape-att-marked{ display: flex; }
+    .ape-att.is-marked .ape-att-del{ display: none; }
+    .ape-att.is-marked{ outline: 2px solid #DC2626; outline-offset: 2px; }
+
+    /* ═══════════ Drop Zone ═══════════ */
+    .ape-drop{
+        border: 3px dashed #CBD5E1;
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        background: #F8FAFC;
+        transition: border-color .25s ease, background .25s ease, transform .25s ease;
+    }
+    .ape-drop:hover, .ape-drop.is-drag{
+        border-color: var(--ape-success);
+        background: #ECFDF5;
+        transform: scale(1.005);
+    }
+    .ape-drop-icon{
+        width: 64px; height: 64px;
+        margin: 0 auto .75rem;
+        border-radius: 18px;
+        background: var(--ape-grad-success);
+        color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.6rem;
+        box-shadow: 0 10px 24px -6px rgba(16,185,129,.45);
+    }
+    .ape-drop p{ margin: 0; font-weight: 700; color: var(--ape-text); }
+    .ape-drop small{ color: var(--ape-muted); font-size: .85rem; }
+
+    .ape-preview{
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+        margin-top: 1rem;
+    }
+    .ape-prev-card{
+        position: relative;
+        height: 130px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 14px rgba(0,0,0,.08);
+        animation: ape-pop .25s var(--ape-ease);
+    }
+    .ape-prev-card img{ width: 100%; height: 100%; object-fit: cover; }
+    .ape-prev-cap{
+        position: absolute; bottom: 0; right: 0; left: 0;
+        background: linear-gradient(transparent, rgba(0,0,0,.75));
+        color: #fff;
+        padding: 6px 8px;
+        font-size: .72rem; font-weight: 700;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ape-prev-icon{
+        height: 100%;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        padding: .75rem;
+        border: 2px solid var(--ape-border);
+        border-radius: 12px;
+        text-align: center;
+    }
+    .ape-prev-icon i{ font-size: 2rem; margin-bottom: .5rem; }
+    .ape-prev-icon small{
+        font-size: .7rem; font-weight: 700;
+        color: var(--ape-muted);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        max-width: 100%;
+    }
+    .ape-prev-info{
+        grid-column: 1 / -1;
+        background: rgba(79,70,229,.08);
+        color: var(--ape-primary);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 700;
+        font-size: .9rem;
+        border: 1px solid rgba(79,70,229,.18);
+    }
+
+    /* ═══════════ Embed (الإصلاح) ═══════════ */
+    .ape-embed-tip{
+        margin-top: .85rem;
+        padding: .85rem 1rem;
+        background: #FFFBEB;
+        border: 1px solid #FDE68A;
+        border-radius: 12px;
+        color: #92400E;
+        font-size: .85rem;
+        font-weight: 600;
+        display: flex; gap: 10px;
+        align-items: flex-start;
+    }
+    .ape-embed-tip i{ color: var(--ape-warning); margin-top: 2px; }
+    .ape-embed-list{ margin-top: 1rem; display: flex; flex-direction: column; gap: 10px; }
+    .ape-embed-row{
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1.5px solid var(--ape-border);
+        animation: ape-pop .25s var(--ape-ease);
+    }
+    .ape-embed-row.is-valid{ border-color:#A7F3D0; background:#F0FDF4; }
+    .ape-embed-row.is-invalid{ border-color:#FECACA; background:#FEF2F2; }
+
+    .ape-embed-icon{
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0; font-size: 1rem;
+        color: #fff; background: var(--ape-warning);
+    }
+    .ape-embed-row.is-valid .ape-embed-icon{ background: var(--ape-success); }
+    .ape-embed-row.is-invalid .ape-embed-icon{ background: var(--ape-danger); }
+    .ape-embed-text{ flex: 1; min-width: 0; }
+    .ape-embed-type{ font-weight: 800; font-size: .82rem; color: var(--ape-text); }
+    .ape-embed-url{
+        font-size: .75rem; color: var(--ape-muted); direction: ltr;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ═══════════ Submit Bar ═══════════ */
+    .ape-actions{
+        display: flex; gap: 12px; justify-content: center;
+        margin: 1.5rem 0 2.5rem; flex-wrap: wrap;
+    }
+    .ape-btn{
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: .9rem 2rem;
+        border-radius: 14px;
+        font-weight: 800; font-size: 1rem;
+        font-family: 'Cairo', sans-serif;
+        cursor: pointer; text-decoration: none;
+        position: relative; overflow: hidden; isolation: isolate;
+        transition: transform .25s var(--ape-ease), box-shadow .25s ease, opacity .2s;
+        border: none;
+    }
+    .ape-btn-primary{
+        background: var(--ape-grad-primary);
+        color: #fff;
+        box-shadow: 0 12px 28px -8px rgba(79,70,229,.55);
+    }
+    .ape-btn-primary::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform .8s ease;
+    }
+    .ape-btn-primary:hover{
+        transform: translateY(-3px); color: #fff;
+        box-shadow: 0 16px 36px -8px rgba(79,70,229,.7);
+    }
+    .ape-btn-primary:hover::after{ transform: translateX(100%); }
+    .ape-btn-primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
+    .ape-btn-cancel{
+        background: #fff;
+        color: var(--ape-text);
+        border: 2px solid var(--ape-border);
+    }
+    .ape-btn-cancel:hover{
+        background: #F8FAFC;
+        border-color: var(--ape-primary);
+        color: var(--ape-primary);
+        transform: translateY(-2px);
+    }
+    .ape-btn:focus-visible{ outline: 2px solid var(--ape-accent); outline-offset: 3px; }
+
+    .ape-spin{
+        display:none; width:18px; height:18px;
+        border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff;
+        border-radius: 50%;
+        animation: ape-spin .7s linear infinite;
+    }
+    .ape-btn-primary.is-loading .ape-spin{ display:inline-block; }
+    .ape-btn-primary.is-loading .ape-icon-default{ display:none; }
+
+    @@media (prefers-reduced-motion: reduce){
+        .ape-scope *, .ape-scope *::before, .ape-scope *::after{
+            animation: none !important; transition: none !important;
+        }
+    }
+</style>
+
+<div class="ape-scope">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+
+            <!-- Header -->
+            <div class="ape-header">
+                <a asp-area="Admin" asp-controller="Posts" asp-action="Index"
+                   class="ape-back-btn" title="رجوع">
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
+                <div class="ape-header-icon" aria-hidden="true">
+                    <i class="fas fa-pen-to-square"></i>
+                </div>
+                <div class="ape-header-text">
+                    <h1>تعديل المنشور</h1>
+                    <small>قم بتعديل بيانات المنشور</small>
+                </div>
+            </div>
+
+            <form asp-area="Admin"
+                  asp-controller="Posts"
+                  asp-action="Edit"
+                  method="post"
+                  enctype="multipart/form-data"
+                  id="ape-form"
+                  novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <!-- Step 1 - العنوان -->
+                <div class="ape-step ape-step-1">
+                    <div class="ape-step-head">
+                        <span class="ape-step-num">1</span>
+                        <div>
+                            <h2 class="ape-step-title">العنوان</h2>
+                            <small class="ape-step-sub">عنوان المنشور الرئيسي</small>
+                        </div>
+                    </div>
+                    <div class="ape-step-body">
+                        <input asp-for="Title"
+                               class="ape-input"
+                               placeholder="اكتب عنوان المنشور..."
+                               autocomplete="off" />
+                        <span asp-validation-for="Title" class="text-danger small mt-2 d-block"></span>
+                    </div>
+                </div>
+
+                <!-- Step 2 - المحتوى -->
+                <div class="ape-step ape-step-2">
+                    <div class="ape-step-head">
+                        <span class="ape-step-num">2</span>
+                        <div>
+                            <h2 class="ape-step-title">المحتوى والوصف</h2>
+                            <small class="ape-step-sub">اكتب تفاصيل المنشور</small>
+                        </div>
+                    </div>
+                    <div class="ape-step-body">
+                        <textarea asp-for="Content"
+                                  rows="10"
+                                  class="ape-textarea"
+                                  placeholder="اكتب محتوى المنشور هنا..."></textarea>
+                        <span asp-validation-for="Content" class="text-danger small mt-2 d-block"></span>
+                    </div>
+                </div>
+
+                <!-- Step 3 - المرفقات الحالية -->
+                @if (hasExisting)
+                {
+                    <div class="ape-step ape-step-3">
+                        <div class="ape-step-head">
+                            <span class="ape-step-num">3</span>
+                            <div>
+                                <h2 class="ape-step-title">
+                                    المرفقات الحالية
+                                    <span class="ape-pill">@Model.ExistingAttachments.Count مرفق</span>
+                                </h2>
+                                <small class="ape-step-sub">
+                                    اضغط على
+                                    <i class="fas fa-trash-can" style="color:#EF4444"></i>
+                                    لتحديد المرفق للحذف عند الحفظ
+                                </small>
+                            </div>
+                        </div>
+                        <div class="ape-step-body">
+                            <!-- بنحط الـ inputs الخفية للحذف هنا، الـ JS بيضيف/يشيل -->
+                            <div id="ape-remove-inputs"></div>
+
+                            <div class="ape-att-grid">
+                                @foreach (var att in Model.ExistingAttachments)
+                                {
+                                    var displayName = att.Type == WebApplication1.Models.AttachmentType.Embed
+                                        ? (att.EmbedUrl ?? att.FilePath)
+                                        : att.FileName;
+
+                                    <div class="ape-att" data-att-id="@att.Id" data-att-name="@displayName">
+                                        <button type="button"
+                                                class="ape-att-del"
+                                                aria-label="حذف هذا المرفق"
+                                                title="حذف">
+                                            <i class="fas fa-trash-can" aria-hidden="true"></i>
+                                        </button>
+
+                                        @if (att.Type == WebApplication1.Models.AttachmentType.Image)
+                                        {
+                                            <img src="@att.FilePath" alt="@att.FileName" />
+                                            <div class="ape-att-caption">
+                                                <i class="fas fa-image" aria-hidden="true"></i>
+                                                @att.FileName
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            var iconClass = att.Type == WebApplication1.Models.AttachmentType.PDF ? "fa-file-pdf" :
+                                                            att.Type == WebApplication1.Models.AttachmentType.Video ? "fa-film" :
+                                                            att.Type == WebApplication1.Models.AttachmentType.Embed ? "fa-link" : "fa-paperclip";
+                                            var box = att.Type == WebApplication1.Models.AttachmentType.PDF ? "ape-att-pdf" :
+                                                      att.Type == WebApplication1.Models.AttachmentType.Video ? "ape-att-video" :
+                                                      att.Type == WebApplication1.Models.AttachmentType.Embed ? "ape-att-embed" : "ape-att-other";
+                                            <div class="ape-att-icon @box">
+                                                <i class="fas @iconClass" aria-hidden="true"></i>
+                                                <small title="@displayName">@displayName</small>
+                                            </div>
+                                        }
+
+                                        <!-- شارة الحذف اللى بتظهر لما يتعلّم -->
+                                        <div class="ape-att-marked" aria-hidden="true">
+                                            <span><i class="fas fa-trash-can"></i> سيتم حذفه</span>
+                                            <button type="button" class="ape-att-undo">تراجع</button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- إضافة ملفات جديدة -->
+                <div class="ape-step ape-step-4">
+                    <div class="ape-step-head">
+                        <span class="ape-step-num">@newFilesNum</span>
+                        <div>
+                            <h2 class="ape-step-title">إضافة ملفات جديدة</h2>
+                            <small class="ape-step-sub">صور، فيديوهات، PDF، ملفات...</small>
+                        </div>
+                    </div>
+                    <div class="ape-step-body">
+                        <div id="ape-drop" class="ape-drop">
+                            <div class="ape-drop-icon" aria-hidden="true">
+                                <i class="fas fa-cloud-arrow-up"></i>
+                            </div>
+                            <p>اسحب الملفات هنا أو اضغط للاختيار</p>
+                            <small>يمكنك اختيار أكثر من ملف في نفس الوقت</small>
+                        </div>
+
+                        <input type="file"
+                               id="ape-new-files"
+                               name="NewFiles"
+                               multiple
+                               style="display:none"
+                               aria-label="ملفات جديدة" />
+
+                        <div id="ape-preview" class="ape-preview"></div>
+                    </div>
+                </div>
+
+                <!-- Embed (الإصلاح) -->
+                <div class="ape-step ape-step-5">
+                    <div class="ape-step-head">
+                        <span class="ape-step-num">@newEmbedNum</span>
+                        <div>
+                            <h2 class="ape-step-title">روابط تضمين جديدة</h2>
+                            <small class="ape-step-sub">YouTube، Google Drive... (نحوّلها تلقائياً)</small>
+                        </div>
+                    </div>
+                    <div class="ape-step-body">
+                        <textarea asp-for="NewEmbedUrls"
+                                  id="ape-embed-input"
+                                  rows="3"
+                                  class="ape-textarea"
+                                  placeholder="ضع رابط التضمين — كل رابط في سطر منفصل"
+                                  style="direction:ltr; font-size:.92rem;"
+                                  spellcheck="false"></textarea>
+
+                        <div class="ape-embed-tip">
+                            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            <span>
+                                <strong>تم التحسين:</strong>
+                                انسخ الرابط العادي من YouTube أو Google Drive وهنحوّله تلقائياً لرابط تضمين صحيح قبل الإرسال.
+                            </span>
+                        </div>
+
+                        <div id="ape-embed-list" class="ape-embed-list" hidden></div>
+                    </div>
+                </div>
+
+                <!-- أزرار -->
+                <div class="ape-actions">
+                    <button type="submit" id="ape-submit" class="ape-btn ape-btn-primary">
+                        <span class="ape-icon-default">
+                            <i class="fas fa-save" aria-hidden="true"></i>
+                        </span>
+                        <span class="ape-spin" aria-hidden="true"></span>
+                        <span>حفظ التعديلات</span>
+                    </button>
+                    <a asp-area="Admin" asp-controller="Posts" asp-action="Index"
+                       class="ape-btn ape-btn-cancel">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                        إلغاء
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/embed-normalizer.js" asp-append-version="true"></script>
+    <script src="~/js/upload-progress.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            'use strict';
+            const detectAndNormalize = window.EmbedNormalizer.detectAndNormalize;
+
+            // ═══════════════════════════════════════
+            // إدارة الملفات الجديدة + Drag & Drop
+            // ═══════════════════════════════════════
+            const drop      = document.getElementById('ape-drop');
+            const fileInput = document.getElementById('ape-new-files');
+            const preview   = document.getElementById('ape-preview');
+
+            drop.addEventListener('click', () => fileInput.click());
+            drop.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    fileInput.click();
+                }
+            });
+            drop.setAttribute('tabindex', '0');
+            drop.setAttribute('role', 'button');
+            drop.setAttribute('aria-label', 'اختر ملفات جديدة');
+
+            ['dragover', 'dragenter'].forEach(ev =>
+                drop.addEventListener(ev, e => {
+                    e.preventDefault();
+                    drop.classList.add('is-drag');
+                })
+            );
+            ['dragleave', 'dragend'].forEach(ev =>
+                drop.addEventListener(ev, () => drop.classList.remove('is-drag'))
+            );
+            drop.addEventListener('drop', e => {
+                e.preventDefault();
+                drop.classList.remove('is-drag');
+                if (e.dataTransfer.files.length) {
+                    const dt = new DataTransfer();
+                    Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+                    fileInput.files = dt.files;
+                    renderPreview(fileInput.files);
+                }
+            });
+
+            fileInput.addEventListener('change', () => renderPreview(fileInput.files));
+
+            function renderPreview(files) {
+                preview.innerHTML = '';
+                if (!files || files.length === 0) return;
+
+                const info = document.createElement('div');
+                info.className = 'ape-prev-info';
+                info.innerHTML = `<i class="fas fa-info-circle" aria-hidden="true"></i> تم اختيار ${files.length} ملف`;
+                preview.appendChild(info);
+
+                Array.from(files).forEach(file => {
+                    const card = document.createElement('div');
+
+                    if (file.type.startsWith('image/')) {
+                        card.className = 'ape-prev-card';
+                        const fr = new FileReader();
+                        fr.onload = e => {
+                            card.innerHTML = `
+                                <img src="${e.target.result}" alt="" />
+                                <div class="ape-prev-cap">
+                                    <i class="fas fa-image" aria-hidden="true"></i>
+                                    <span></span>
+                                </div>
+                            `;
+                            card.querySelector('.ape-prev-cap span').textContent = file.name;
+                        };
+                        fr.readAsDataURL(file);
+                    } else {
+                        const ic = file.type.includes('pdf')   ? 'fa-file-pdf'   :
+                                   file.type.includes('video') ? 'fa-film'       :
+                                                                 'fa-paperclip';
+                        const bg = file.type.includes('pdf')   ? '#FEF2F2'       :
+                                   file.type.includes('video') ? '#F5F3FF'       :
+                                                                 '#F8FAFC';
+                        const co = file.type.includes('pdf')   ? '#B91C1C'       :
+                                   file.type.includes('video') ? '#6D28D9'       :
+                                                                 '#64748B';
+                        card.className = 'ape-prev-icon';
+                        card.style.background = bg;
+                        card.style.color = co;
+                        card.innerHTML = `
+                            <i class="fas ${ic}" aria-hidden="true"></i>
+                            <small title=""></small>
+                        `;
+                        card.querySelector('small').textContent = file.name;
+                        card.querySelector('small').title       = file.name;
+                    }
+                    preview.appendChild(card);
+                });
+            }
+
+            // ═══════════════════════════════════════
+            // 🔧 Embed URL Normalizer + Preview
+            //   (uses shared window.EmbedNormalizer)
+            // ═══════════════════════════════════════
+            const embedTA   = document.getElementById('ape-embed-input');
+            const embedList = document.getElementById('ape-embed-list');
+
+            function refreshEmbedPreview() {
+                const lines = embedTA.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                if (lines.length === 0) {
+                    embedList.hidden = true;
+                    embedList.innerHTML = '';
+                    return;
+                }
+                embedList.hidden = false;
+                embedList.innerHTML = '';
+                lines.forEach(line => {
+                    const info = detectAndNormalize(line);
+                    if (!info) return;
+                    const row = document.createElement('div');
+                    row.className = 'ape-embed-row ' + (info.valid ? 'is-valid' : 'is-invalid');
+                    row.innerHTML = `
+                        <span class="ape-embed-icon" aria-hidden="true">
+                            <i class="fab ${info.icon}"></i>
+                        </span>
+                        <div class="ape-embed-text">
+                            <div class="ape-embed-type"></div>
+                            <div class="ape-embed-url"></div>
+                        </div>
+                    `;
+                    row.querySelector('.ape-embed-type').textContent =
+                        info.type + (info.valid && info.normalized !== line ? ' — تم التحويل' : '');
+                    row.querySelector('.ape-embed-url').textContent = info.normalized;
+                    embedList.appendChild(row);
+                });
+            }
+
+            embedTA.addEventListener('input', refreshEmbedPreview);
+            embedTA.addEventListener('blur',  refreshEmbedPreview);
+            refreshEmbedPreview();
+
+            // ═══════════════════════════════════════
+            // 🗑️  حذف المرفقات الحالية (toggle)
+            // ═══════════════════════════════════════
+            const removeInputs = document.getElementById('ape-remove-inputs');
+            const attCards     = document.querySelectorAll('.ape-att[data-att-id]');
+
+            function markForRemoval(card) {
+                const id = card.dataset.attId;
+                if (!id) return;
+                if (card.classList.contains('is-marked')) return;
+                card.classList.add('is-marked');
+                const inp = document.createElement('input');
+                inp.type  = 'hidden';
+                inp.name  = 'RemoveAttachmentIds';
+                inp.value = id;
+                inp.dataset.removeFor = id;
+                removeInputs.appendChild(inp);
+            }
+
+            function unmarkForRemoval(card) {
+                const id = card.dataset.attId;
+                if (!id) return;
+                card.classList.remove('is-marked');
+                const inp = removeInputs.querySelector(`input[data-remove-for="${id}"]`);
+                if (inp) inp.remove();
+            }
+
+            attCards.forEach(card => {
+                const delBtn  = card.querySelector('.ape-att-del');
+                const undoBtn = card.querySelector('.ape-att-undo');
+
+                delBtn?.addEventListener('click', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const name = card.dataset.attName || 'هذا المرفق';
+                    if (confirm(`هل تريد فعلاً حذف:\n${name}\n\nالحذف هيتم عند حفظ المنشور.`)) {
+                        markForRemoval(card);
+                    }
+                });
+
+                undoBtn?.addEventListener('click', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    unmarkForRemoval(card);
+                });
+            });
+
+            // ═══════════════════════════════════════
+            // Submit handling
+            // ═══════════════════════════════════════
+            const form      = document.getElementById('ape-form');
+            const submitBtn = document.getElementById('ape-submit');
+
+            // رفع AJAX مع progress overlay (بدل submit عادى يظهر "علّق")
+            window.UploadProgress.attach(form, {
+                submitBtn: submitBtn,
+                successText: 'تم تحديث المنشور بنجاح ✓',
+                onBeforeSend: function (fd) {
+                    // طبّع روابط التضمين قبل الإرسال
+                    const lines = embedTA.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    const normalized = lines
+                        .map(detectAndNormalize)
+                        .filter(x => x && x.valid)
+                        .map(x => x.normalized)
+                        .join('\n');
+                    embedTA.value = normalized;
+                    fd.set('NewEmbedUrls', normalized);
+                }
+            });
+        })();
+    </script>
+}

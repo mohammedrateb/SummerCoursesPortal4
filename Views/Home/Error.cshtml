@@ -1,0 +1,112 @@
+@{
+    var code    = ViewBag.StatusCode as int? ?? 500;
+    var title   = ViewBag.Title   as string ?? "حدث خطأ";
+    var message = ViewBag.Message as string ?? "حدث خطأ غير متوقع.";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@code — @title</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        *{ box-sizing:border-box; margin:0; padding:0; font-family:'Cairo',sans-serif; }
+        body{
+            min-height:100vh; display:flex; align-items:center; justify-content:center;
+            background:linear-gradient(135deg,#1E1B4B 0%,#0F172A 50%,#0C4A6E 100%);
+            color:#fff; padding:2rem; text-align:center;
+        }
+        .err-card{
+            max-width:500px; width:100%;
+            background:rgba(255,255,255,.05);
+            border:1px solid rgba(255,255,255,.12);
+            border-radius:28px; padding:3rem 2rem;
+            backdrop-filter:blur(20px);
+            box-shadow:0 30px 60px rgba(0,0,0,.4);
+        }
+        .err-code{
+            font-size:6rem; font-weight:900; line-height:1;
+            background:linear-gradient(135deg,#6366F1,#06B6D4);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            background-clip:text;
+            margin-bottom:.5rem;
+        }
+        .err-icon{
+            font-size:3rem; margin-bottom:1rem;
+            background:linear-gradient(135deg,#4F46E5,#06B6D4);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            background-clip:text;
+        }
+        .err-title{
+            font-size:1.6rem; font-weight:800; margin-bottom:.75rem; color:#fff;
+        }
+        .err-msg{
+            color:rgba(255,255,255,.7); font-size:1rem; line-height:1.8;
+            margin-bottom:2rem;
+        }
+        .err-btn{
+            display:inline-flex; align-items:center; gap:8px;
+            padding:.85rem 2rem; border-radius:14px;
+            background:linear-gradient(135deg,#4F46E5,#06B6D4);
+            color:#fff; text-decoration:none; font-weight:800;
+            box-shadow:0 10px 24px -8px rgba(79,70,229,.6);
+            transition:transform .2s ease,box-shadow .2s ease;
+            margin:0 .4rem .75rem;
+        }
+        .err-btn:hover{ transform:translateY(-3px); color:#fff; }
+        .err-btn-outline{
+            background:transparent;
+            border:2px solid rgba(255,255,255,.2);
+            box-shadow:none;
+        }
+        .err-btn-outline:hover{ border-color:rgba(255,255,255,.5); background:rgba(255,255,255,.06); }
+        .err-divider{ border:none; border-top:1px solid rgba(255,255,255,.10); margin:1.75rem 0; }
+        .err-dots{ display:flex; gap:.6rem; justify-content:center; margin-bottom:1.5rem; }
+        .err-dot{ width:10px; height:10px; border-radius:50%; }
+    </style>
+</head>
+<body>
+<div class="err-card">
+    <div class="err-dots">
+        <div class="err-dot" style="background:#EF4444"></div>
+        <div class="err-dot" style="background:#F59E0B"></div>
+        <div class="err-dot" style="background:#10B981"></div>
+    </div>
+
+    @if (code == 404)
+    {
+        <div class="err-icon"><i class="fas fa-compass"></i></div>
+    }
+    else if (code == 403)
+    {
+        <div class="err-icon"><i class="fas fa-shield-halved"></i></div>
+    }
+    else if (code == 429)
+    {
+        <div class="err-icon"><i class="fas fa-gauge-high"></i></div>
+    }
+    else
+    {
+        <div class="err-icon"><i class="fas fa-triangle-exclamation"></i></div>
+    }
+
+    <div class="err-code">@code</div>
+    <h1 class="err-title">@title</h1>
+    <p class="err-msg">@message</p>
+
+    <hr class="err-divider" />
+
+    <a href="/" class="err-btn">
+        <i class="fas fa-house"></i>
+        الصفحة الرئيسية
+    </a>
+    <a href="javascript:history.back()" class="err-btn err-btn-outline">
+        <i class="fas fa-arrow-right"></i>
+        الرجوع للخلف
+    </a>
+</div>
+</body>
+</html>

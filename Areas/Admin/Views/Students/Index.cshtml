@@ -1,0 +1,1070 @@
+﻿@*
+    ═══════════════════════════════════════════════════════════════
+      Admin/Students/Index.cshtml — Indigo Command Center Theme
+      • نفس هوية لوحة الإدارة: Indigo + Cyan + Magenta + Purple.
+      • Glassmorphism stat cards + filters + table + modals.
+      • Class prefix: asi-* (Admin Students Index).
+      • addEventListener (مفيش inline onclick).
+      • صفر تعديل في الـ Backend — كل asp-* و AntiForgeryToken محفوظة.
+    ═══════════════════════════════════════════════════════════════
+*@
+@model WebApplication1.ViewModels.Admin.AdminStudentsViewModel
+@{
+    ViewData["Title"] = "إدارة الطلاب";
+    var currentSearch  = Model.SearchTerm ?? "";
+    var currentPayment = Model.PaymentFilter ?? "";
+}
+
+<style>
+    .asi-scope{
+        --asi-primary:#4F46E5;
+        --asi-accent:#06B6D4;
+        --asi-magenta:#EC4899;
+        --asi-purple:#8B5CF6;
+        --asi-success:#10B981;
+        --asi-warning:#F59E0B;
+        --asi-danger:#EF4444;
+        --asi-text:#0F172A;
+        --asi-muted:#64748B;
+        --asi-border:#E2E8F0;
+        --asi-ease: cubic-bezier(.22,.61,.36,1);
+        --asi-grad-primary: linear-gradient(135deg,#4F46E5 0%,#06B6D4 100%);
+        --asi-grad-purple:  linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%);
+        --asi-grad-magenta: linear-gradient(135deg,#EC4899 0%,#F472B6 100%);
+        --asi-grad-success: linear-gradient(135deg,#10B981 0%,#34D399 100%);
+        --asi-grad-warning: linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
+        --asi-grad-danger:  linear-gradient(135deg,#EF4444 0%,#F87171 100%);
+    }
+
+    @@keyframes asi-up    { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    @@keyframes asi-shine { 0%{transform:translateX(-100%)} 60%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
+    @@keyframes asi-shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
+    @@keyframes asi-pop   { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+
+    /* ═══════════ Alerts ═══════════ */
+    .asi-alert{
+        position: relative;
+        border: none;
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        font-weight: 700;
+        display: flex; align-items: center; gap: 10px;
+        animation: asi-up .35s var(--asi-ease) both;
+        overflow: hidden;
+    }
+    .asi-alert::before{ content:""; position:absolute; right:0; top:0; bottom:0; width: 5px; }
+    .asi-alert-success{ background: linear-gradient(135deg,#ECFDF5,#D1FAE5); color:#065F46; }
+    .asi-alert-success::before{ background: var(--asi-success); }
+    .asi-alert-error  { background: linear-gradient(135deg,#FEF2F2,#FEE2E2); color:#991B1B; animation: asi-shake .5s ease; }
+    .asi-alert-error::before{ background: var(--asi-danger); }
+
+    /* ═══════════ Stat Cards ═══════════ */
+    .asi-stat{
+        position: relative;
+        border-radius: 20px;
+        padding: 1.5rem 1.75rem;
+        color: #fff;
+        overflow: hidden;
+        box-shadow: 0 14px 30px -10px rgba(15,23,42,.25);
+        animation: asi-up .55s var(--asi-ease) both;
+        height: 100%;
+    }
+    .asi-stat::before{
+        content:""; position: absolute; inset: 0; pointer-events: none;
+        background:
+            radial-gradient(60% 60% at 80% 20%, rgba(255,255,255,.18), transparent 60%),
+            radial-gradient(50% 50% at 10% 90%, rgba(0,0,0,.18), transparent 60%);
+    }
+    .asi-stat::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.10) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: asi-shine 5s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .asi-stat-inner{ position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; }
+    .asi-stat-label{ opacity: .85; font-size: .9rem; margin: 0 0 .35rem; font-weight: 700; }
+    .asi-stat-value{ font-weight: 800; font-size: 2.1rem; margin: 0; line-height: 1; }
+    .asi-stat-icon{
+        width: 56px; height: 56px;
+        border-radius: 16px;
+        background: rgba(255,255,255,.18);
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+        backdrop-filter: blur(6px);
+    }
+    .asi-stat-total { background: var(--asi-grad-primary); }
+    .asi-stat-paid  { background: var(--asi-grad-success); }
+    .asi-stat-unpaid{ background: var(--asi-grad-danger); }
+
+    .asi-stagger-1{ animation-delay: .05s; }
+    .asi-stagger-2{ animation-delay: .15s; }
+    .asi-stagger-3{ animation-delay: .25s; }
+
+    /* ═══════════ Section Card ═══════════ */
+    .asi-section{
+        position: relative;
+        background: #fff;
+        border-radius: 20px;
+        padding: 1.75rem;
+        box-shadow: 0 12px 40px rgba(15,23,42,.08);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        animation: asi-up .55s var(--asi-ease) both;
+    }
+    .asi-section::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:4px;
+        background: linear-gradient(90deg, var(--asi-primary), var(--asi-accent), var(--asi-magenta));
+    }
+
+    .asi-label{
+        display: flex; align-items: center; gap: 8px;
+        font-weight: 700;
+        color: var(--asi-text);
+        margin-bottom: .55rem;
+        font-size: .9rem;
+    }
+    .asi-label i{ color: var(--asi-primary); width: 16px; text-align: center; }
+
+    .asi-input, .asi-select{
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--asi-border);
+        padding: 12px 14px;
+        font-family: 'Cairo', sans-serif;
+        background: #F8FAFC;
+        color: var(--asi-text);
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
+    }
+    .asi-input:focus, .asi-select:focus{
+        outline: none;
+        background: #fff;
+        border-color: var(--asi-primary);
+        box-shadow: 0 0 0 4px rgba(79,70,229,.15);
+        transform: translateY(-1px);
+    }
+
+    /* ═══════════ Buttons ═══════════ */
+    .asi-btn{
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: .7rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 800; font-size: .92rem;
+        font-family: 'Cairo', sans-serif;
+        cursor: pointer; text-decoration: none;
+        border: none;
+        position: relative; overflow: hidden; isolation: isolate;
+        transition: transform .25s var(--asi-ease), box-shadow .25s ease, opacity .2s;
+        color: #fff;
+    }
+    .asi-btn::after{
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.30) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform .8s ease;
+    }
+    .asi-btn:hover{ transform: translateY(-2px); color:#fff; }
+    .asi-btn:hover::after{ transform: translateX(100%); }
+    .asi-btn:focus-visible{ outline: 2px solid var(--asi-accent); outline-offset: 3px; }
+    .asi-btn-primary{ background: var(--asi-grad-primary); box-shadow: 0 10px 24px -8px rgba(79,70,229,.5); }
+    .asi-btn-success{ background: var(--asi-grad-success); box-shadow: 0 10px 24px -8px rgba(16,185,129,.45); }
+    .asi-btn-purple { background: var(--asi-grad-purple);  box-shadow: 0 10px 24px -8px rgba(139,92,246,.45); }
+    .asi-btn-warning{ background: var(--asi-grad-warning); box-shadow: 0 10px 24px -8px rgba(245,158,11,.45); }
+    .asi-btn-danger { background: var(--asi-grad-danger);  box-shadow: 0 10px 24px -8px rgba(239,68,68,.45); }
+
+    .asi-btn-cancel{
+        background: #fff;
+        color: var(--asi-text);
+        border: 2px solid var(--asi-border);
+    }
+    .asi-btn-cancel:hover{
+        background: #F8FAFC;
+        border-color: var(--asi-primary);
+        color: var(--asi-primary);
+        transform: translateY(-2px);
+    }
+
+    .asi-icon-btn{
+        width: 42px; height: 42px;
+        border-radius: 12px;
+        background: #fff;
+        border: 2px solid var(--asi-border);
+        color: var(--asi-text);
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        font-weight: 800;
+        text-decoration: none;
+        transition: background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease;
+    }
+    .asi-icon-btn:hover{
+        background: #F8FAFC;
+        border-color: var(--asi-primary);
+        color: var(--asi-primary);
+        transform: translateY(-2px);
+    }
+
+    /* ═══════════ Table ═══════════ */
+    .asi-table-wrap{
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 12px 40px rgba(15,23,42,.08);
+        overflow: hidden;
+        animation: asi-up .55s var(--asi-ease) both;
+        position: relative;
+    }
+    .asi-table-wrap::before{
+        content:""; position:absolute; left:0; right:0; top:0; height:4px;
+        background: linear-gradient(90deg, var(--asi-primary), var(--asi-accent), var(--asi-magenta));
+        z-index: 2;
+    }
+    .asi-table{
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .92rem;
+        margin: 0;
+    }
+    .asi-table thead th{
+        background: linear-gradient(135deg,#1E1B4B 0%,#0F172A 100%);
+        color: #fff;
+        padding: 14px 12px;
+        text-align: right;
+        font-weight: 800;
+        font-size: .88rem;
+        white-space: nowrap;
+        position: sticky; top: 0; z-index: 1;
+    }
+    .asi-table tbody td{
+        padding: 12px;
+        border-bottom: 1px solid #F1F5F9;
+        vertical-align: middle;
+        color: #334155;
+    }
+    .asi-table tbody tr{
+        transition: background .2s ease;
+        animation: asi-up .3s var(--asi-ease) both;
+    }
+    .asi-table tbody tr:nth-child(even){ background: #F8FAFC; }
+    .asi-table tbody tr:hover{ background: rgba(79,70,229,.06); }
+    .asi-table tbody tr:last-child td{ border-bottom: none; }
+
+    .asi-row-num{
+        text-align: center;
+        font-weight: 800;
+        color: var(--asi-muted);
+        font-variant-numeric: tabular-nums;
+    }
+    .asi-row-name{ font-weight: 800; color: var(--asi-text); }
+    .asi-row-mono{ font-variant-numeric: tabular-nums; color: var(--asi-muted); }
+
+    .asi-pill{
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 5px 12px;
+        border-radius: 50px;
+        font-size: .78rem; font-weight: 800;
+        border: 1px solid;
+    }
+    .asi-pill-level   { background:#EEF2FF; color:#4338CA; border-color:#C7D2FE; }
+    .asi-pill-division{ background:#F5F3FF; color:#6D28D9; border-color:#DDD6FE; }
+    .asi-pill-count{
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 38px;
+        padding: 5px 12px;
+        border-radius: 50px;
+        background: linear-gradient(135deg,#64748B,#475569);
+        color: #fff;
+        font-weight: 800;
+        font-size: .85rem;
+    }
+
+    .asi-subjects{ display: flex; flex-direction: column; gap: 4px; }
+    .asi-subject{
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: .76rem;
+        font-weight: 700;
+        border: 1px solid;
+    }
+    .asi-subject-1{ background:#F0FDF4; color:#15803D; border-color:#A7F3D0; }
+    .asi-subject-2{ background:#FFFBEB; color:#B45309; border-color:#FDE68A; }
+    .asi-subject-3{ background:#FEF2F2; color:#BE123C; border-color:#FECACA; }
+    .asi-subject-4{ background:#EFF6FF; color:#3B82F6; border-color:#BFDBFE; }
+    .asi-subject-5{ background:#F5F3FF; color:#8B5CF6; border-color:#DDD6FE; }
+
+    .asi-pay-btn{
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 16px;
+        border-radius: 50px;
+        border: none;
+        color: #fff;
+        font-weight: 800;
+        font-size: .82rem;
+        cursor: pointer;
+        font-family: 'Cairo', sans-serif;
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .asi-pay-btn:hover{ transform: scale(1.05); }
+    .asi-pay-paid  { background: var(--asi-grad-success); box-shadow: 0 4px 12px rgba(16,185,129,.35); }
+    .asi-pay-unpaid{ background: var(--asi-grad-danger);  box-shadow: 0 4px 12px rgba(239,68,68,.35); }
+
+    .asi-row-actions{
+        display: flex; gap: 6px; justify-content: center;
+    }
+    .asi-action-btn{
+        width: 34px; height: 34px;
+        border-radius: 10px;
+        display: inline-flex; align-items: center; justify-content: center;
+        text-decoration: none;
+        border: none;
+        font-size: .82rem;
+        cursor: pointer;
+        transition: transform .2s ease, box-shadow .2s ease, opacity .2s;
+        color: #fff;
+    }
+    .asi-action-btn:hover{ transform: translateY(-2px); }
+    .asi-action-edit  { background: var(--asi-grad-primary); box-shadow: 0 6px 14px -4px rgba(79,70,229,.5); }
+    .asi-action-delete{ background: var(--asi-grad-danger);  box-shadow: 0 6px 14px -4px rgba(239,68,68,.45); }
+
+    /* ═══════════ Empty ═══════════ */
+    .asi-empty{
+        text-align: center;
+        padding: 3.5rem 1.5rem;
+    }
+    .asi-empty-icon{
+        width: 90px; height: 90px;
+        margin: 0 auto 1rem;
+        border-radius: 24px;
+        background: linear-gradient(135deg,#F1F5F9,#E2E8F0);
+        display: inline-flex; align-items: center; justify-content: center;
+        color: var(--asi-muted); font-size: 2.4rem;
+    }
+    .asi-empty h2{ font-weight: 800; color: var(--asi-text); font-size: 1.15rem; margin: 0 0 .25rem; }
+    .asi-empty p{ color: var(--asi-muted); margin: 0 0 1.25rem; font-size: .92rem; }
+
+    /* ═══════════ Modal ═══════════ */
+    .asi-modal-content{
+        border: none; border-radius: 18px; overflow: hidden;
+        box-shadow: 0 30px 60px rgba(15,23,42,.4);
+    }
+    .asi-modal-header{
+        border: none;
+        padding: 1.1rem 1.5rem;
+        color: #fff;
+    }
+    .asi-modal-header.is-warn  { background: var(--asi-grad-warning); }
+    .asi-modal-header.is-danger{ background: var(--asi-grad-danger); }
+    .asi-modal-title{
+        color: #fff; font-weight: 800;
+        display: flex; align-items: center; gap: 10px;
+        margin: 0;
+    }
+    .asi-modal-body{ padding: 1.75rem; }
+    .asi-modal-warn{
+        border: none;
+        border-right: 5px solid;
+        border-radius: 12px;
+        font-weight: 700;
+        padding: .85rem 1rem;
+        margin-bottom: 1.25rem;
+        display: flex; align-items: flex-start; gap: 10px;
+    }
+    .asi-modal-warn.is-warn  { background:#FEF3C7; color:#92400E; border-right-color: var(--asi-warning); }
+    .asi-modal-warn.is-danger{ background:#FEE2E2; color:#991B1B; border-right-color: var(--asi-danger); }
+
+    .asi-modal-label{
+        display: flex; align-items: center; gap: 8px;
+        font-weight: 700; color: #374151;
+        margin-bottom: .5rem; font-size: .92rem;
+    }
+    .asi-modal-input{
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--asi-border);
+        padding: 12px 14px;
+        font-family: 'Cairo', sans-serif;
+        background: #F8FAFC;
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
+    }
+    .asi-modal-input:focus{
+        outline: none;
+        background: #fff;
+        border-color: var(--asi-primary);
+        box-shadow: 0 0 0 4px rgba(79,70,229,.15);
+    }
+    .asi-modal-input.is-reset{
+        border-color: var(--asi-danger);
+        text-align: center;
+        font-weight: 800;
+        letter-spacing: 3px;
+        color: var(--asi-danger);
+        font-size: 1.1rem;
+    }
+    .asi-modal-input.is-reset.is-ok{ border-color: var(--asi-success); color: var(--asi-success); }
+
+    @@media (prefers-reduced-motion: reduce){
+        .asi-scope *, .asi-scope *::before, .asi-scope *::after{
+            animation: none !important; transition: none !important;
+        }
+    }
+</style>
+
+<div class="asi-scope">
+
+    <!-- Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="asi-alert asi-alert-success" role="status">
+            <i class="fas fa-circle-check" aria-hidden="true"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="asi-alert asi-alert-error" role="alert">
+            <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="asi-stat asi-stat-total asi-stagger-1">
+                <div class="asi-stat-inner">
+                    <div>
+                        <p class="asi-stat-label">إجمالي الطلاب </p>
+                        <h3 class="asi-stat-value">@Model.TotalCount</h3>
+                    </div>
+                    <div class="asi-stat-icon" aria-hidden="true">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="asi-stat asi-stat-paid asi-stagger-2">
+                <div class="asi-stat-inner">
+                    <div>
+                        <p class="asi-stat-label">تم الدفع</p>
+                        <h3 class="asi-stat-value">@Model.PaidCount</h3>
+                    </div>
+                    <div class="asi-stat-icon" aria-hidden="true">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="asi-stat asi-stat-unpaid asi-stagger-3">
+                <div class="asi-stat-inner">
+                    <div>
+                        <p class="asi-stat-label">لم يتم الدفع</p>
+                        <h3 class="asi-stat-value">@Model.UnpaidCount</h3>
+                    </div>
+                    <div class="asi-stat-icon" aria-hidden="true">
+                        <i class="fas fa-circle-xmark"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="asi-section">
+        <form method="get"
+              asp-area="Admin"
+              asp-controller="Students"
+              asp-action="Index"
+              id="asi-filter-form">
+
+            <div class="mb-3">
+                <label class="asi-label">
+                    <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                    بحث
+                </label>
+                <input type="text"
+                       name="searchTerm"
+                       value="@currentSearch"
+                       placeholder="ابحث بالاسم أو الرقم القومي..."
+                       class="asi-input" />
+            </div>
+
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="asi-label">
+                        <i class="fas fa-layer-group" aria-hidden="true"></i>
+                        المستوى
+                    </label>
+                    <select name="levelId" class="asi-select form-select">
+                        <option value="">-- كل المستويات --</option>
+                        @foreach (var level in Model.Levels)
+                        {
+                            <option value="@level.Id"
+                                    selected="@(Model.SelectedLevelId == level.Id ? "selected" : null)">
+                                @level.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="asi-label">
+                        <i class="fas fa-users" aria-hidden="true"></i>
+                        الشعبة
+                    </label>
+                    <select name="divisionId" class="asi-select form-select">
+                        <option value="">-- كل الشعب --</option>
+                        @foreach (var div in Model.Divisions)
+                        {
+                            <option value="@div.Id"
+                                    selected="@(Model.SelectedDivisionId == div.Id ? "selected" : null)">
+                                @div.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="asi-label">
+                        <i class="fas fa-money-bill" aria-hidden="true"></i>
+                        حالة الدفع
+                    </label>
+                    <select name="paymentFilter" class="asi-select form-select">
+                        <option value="" selected="@(currentPayment == "" ? "selected" : null)">-- الكل --</option>
+                        <option value="paid"   selected="@(currentPayment == "paid"   ? "selected" : null)">تم الدفع</option>
+                        <option value="unpaid" selected="@(currentPayment == "unpaid" ? "selected" : null)">لم يتم الدفع</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="asi-btn asi-btn-primary flex-fill">
+                            <i class="fas fa-filter" aria-hidden="true"></i>
+                            بحث
+                        </button>
+                        <a asp-area="Admin"
+                           asp-controller="Students"
+                           asp-action="Index"
+                           class="asi-icon-btn" title="إعادة ضبط">
+                            <i class="fas fa-rotate-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-3 flex-wrap align-items-center">
+
+                <a asp-area="Admin"
+                   asp-controller="Students"
+                   asp-action="ExportExcel"
+                   asp-route-levelId="@Model.SelectedLevelId"
+                   asp-route-divisionId="@Model.SelectedDivisionId"
+                   asp-route-searchTerm="@Model.SearchTerm"
+                   asp-route-paymentFilter="@Model.PaymentFilter"
+                   class="asi-btn asi-btn-success">
+                    <i class="fas fa-file-excel" aria-hidden="true"></i>
+                    Excel (@Model.TotalCount)
+                </a>
+
+                <a asp-area="Admin"
+                   asp-controller="Students"
+                   asp-action="Print"
+                   asp-route-levelId="@Model.SelectedLevelId"
+                   asp-route-divisionId="@Model.SelectedDivisionId"
+                   asp-route-searchTerm="@Model.SearchTerm"
+                   asp-route-paymentFilter="@Model.PaymentFilter"
+                   target="_blank"
+                   class="asi-btn asi-btn-purple">
+                    <i class="fas fa-print" aria-hidden="true"></i>
+                    طباعة (@Model.TotalCount)
+                </a>
+
+                <button type="button" id="asi-open-delete-filtered" class="asi-btn asi-btn-warning">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                    حذف المفلترين (@Model.TotalCount)
+                </button>
+
+                <button type="button" id="asi-open-reset" class="asi-btn asi-btn-danger">
+                    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                    إعادة ضبط DB
+                </button>
+
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="asi-table-wrap">
+        @if (!Model.Students.Any())
+        {
+            <div class="asi-empty">
+                <div class="asi-empty-icon" aria-hidden="true">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h2>لا توجد نتائج</h2>
+                <p>جرب تغيير معايير البحث أو الفلترة</p>
+                <a asp-area="Admin"
+                   asp-controller="Students"
+                   asp-action="Index"
+                   class="asi-btn asi-btn-primary">
+                    <i class="fas fa-list" aria-hidden="true"></i>
+                    عرض الكل
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="asi-table">
+                    <thead>
+                        <tr>
+                            <th class="text-center">#</th>
+                            <th>الاسم</th>
+                            <th>الرقم القومي</th>
+                            <th class="text-center">كود الوصول</th>
+                            <th>الموبايل</th>
+                            <th>المستوى</th>
+                            <th>الشعبة</th>
+                            <th class="text-center">عدد المواد</th>
+                            <th>المواد</th>
+                            <th class="text-center">حالة الدفع</th>
+                            <th class="text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int counter = (Model.CurrentPage - 1) * Model.PageSize; }
+                        @foreach (var student in Model.Students)
+                        {
+                            int subjectCount = 0;
+                            if (!string.IsNullOrEmpty(student.Subject1)) subjectCount++;
+                            if (!string.IsNullOrEmpty(student.Subject2)) subjectCount++;
+                            if (!string.IsNullOrEmpty(student.Subject3)) subjectCount++;
+                            if (!string.IsNullOrEmpty(student.Subject4)) subjectCount++;
+                            if (!string.IsNullOrEmpty(student.Subject5)) subjectCount++;
+
+                            counter++;
+
+                            <tr>
+                                <td class="asi-row-num">@counter</td>
+                                <td class="asi-row-name">@student.FullName</td>
+                                <td dir="ltr" class="asi-row-mono">@student.NationalId</td>
+                                <td dir="ltr" class="text-center">
+                                    @if (!string.IsNullOrEmpty(student.AccessCode))
+                                    {
+                                        <code style="background:#fff7ed;color:#072C2C;padding:4px 8px;border-radius:6px;border:1px dashed #FF5F03;font-family:'Ubuntu',monospace;font-weight:700;letter-spacing:1px;">@student.AccessCode</code>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td dir="ltr" class="asi-row-mono">@student.PhoneNumber</td>
+                                <td>
+                                    <span class="asi-pill asi-pill-level">
+                                        @student.Level?.Name
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="asi-pill asi-pill-division">
+                                        @student.Division?.Name
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="asi-pill-count">@subjectCount</span>
+                                </td>
+                                <td>
+                                    <div class="asi-subjects">
+                                        <span class="asi-subject asi-subject-1">@student.Subject1</span>
+                                        @if (!string.IsNullOrEmpty(student.Subject2))
+                                        {
+                                            <span class="asi-subject asi-subject-2">@student.Subject2</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(student.Subject3))
+                                        {
+                                            <span class="asi-subject asi-subject-3">@student.Subject3</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(student.Subject4))
+                                        {
+                                            <span class="asi-subject asi-subject-4">@student.Subject4</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(student.Subject5))
+                                        {
+                                            <span class="asi-subject asi-subject-5">@student.Subject5</span>
+                                        }
+                                    </div>
+                                </td>
+
+                                <!-- زرار حالة الدفع -->
+                                <td class="text-center">
+                                    <form asp-area="Admin"
+                                          asp-controller="Students"
+                                          asp-action="UpdatePayment"
+                                          method="post"
+                                          style="margin:0">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="studentId"     value="@student.Id" />
+                                        <input type="hidden" name="levelId"       value="@Model.SelectedLevelId" />
+                                        <input type="hidden" name="divisionId"    value="@Model.SelectedDivisionId" />
+                                        <input type="hidden" name="searchTerm"    value="@Model.SearchTerm" />
+                                        <input type="hidden" name="paymentFilter" value="@Model.PaymentFilter" />
+                                        <input type="hidden" name="page"          value="@Model.CurrentPage" />
+
+                                        @if (student.PaymentStatus)
+                                        {
+                                            <button type="submit"
+                                                    name="paymentStatus"
+                                                    value="false"
+                                                    class="asi-pay-btn asi-pay-paid"
+                                                    title="اضغط لتغيير الحالة">
+                                                <i class="fas fa-circle-check" aria-hidden="true"></i>
+                                                تم الدفع
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit"
+                                                    name="paymentStatus"
+                                                    value="true"
+                                                    class="asi-pay-btn asi-pay-unpaid"
+                                                    title="اضغط لتغيير الحالة">
+                                                <i class="fas fa-circle-xmark" aria-hidden="true"></i>
+                                                لم يتم الدفع
+                                            </button>
+                                        }
+                                    </form>
+                                </td>
+
+                                <!-- إجراءات -->
+                                <td>
+                                    <div class="asi-row-actions">
+                                        <a asp-area="Admin"
+                                           asp-controller="Students"
+                                           asp-action="Edit"
+                                           asp-route-id="@student.Id"
+                                           class="asi-action-btn asi-action-edit"
+                                           title="تعديل"
+                                           aria-label="تعديل @student.FullName">
+                                            <i class="fas fa-edit" aria-hidden="true"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="asi-action-btn asi-action-delete asi-delete-btn"
+                                                data-student-id="@student.Id"
+                                                title="حذف"
+                                                aria-label="حذف @student.FullName">
+                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+
+                                    <form id="deleteForm_@student.Id"
+                                          asp-area="Admin"
+                                          asp-controller="Students"
+                                          asp-action="Delete"
+                                          method="post"
+                                          style="display:none">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="studentId"     value="@student.Id" />
+                                        <input type="hidden" name="levelId"       value="@Model.SelectedLevelId" />
+                                        <input type="hidden" name="divisionId"    value="@Model.SelectedDivisionId" />
+                                        <input type="hidden" name="searchTerm"    value="@Model.SearchTerm" />
+                                        <input type="hidden" name="paymentFilter" value="@Model.PaymentFilter" />
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-3 mb-1">
+            <p class="mb-0" style="font-size:.88rem; color:var(--asi-muted); font-weight:700;">
+                عرض
+                <strong style="color:var(--asi-text)">@(((Model.CurrentPage - 1) * Model.PageSize) + 1)</strong>
+                –
+                <strong style="color:var(--asi-text)">@Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalFilteredCount)</strong>
+                من
+                <strong style="color:var(--asi-text)">@Model.TotalFilteredCount</strong>
+                نتيجة
+            </p>
+            <nav aria-label="تنقل الصفحات">
+                <ul class="pagination mb-0" style="gap:4px">
+                    <!-- السابق -->
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link asi-page-link"
+                           href="?page=@(Model.CurrentPage - 1)&levelId=@Model.SelectedLevelId&divisionId=@Model.SelectedDivisionId&searchTerm=@Model.SearchTerm&paymentFilter=@Model.PaymentFilter"
+                           aria-label="الصفحة السابقة">
+                            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                    <!-- أرقام -->
+                    @for (int p = Math.Max(1, Model.CurrentPage - 2);
+                               p <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); p++)
+                    {
+                        <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link asi-page-link"
+                               href="?page=@p&levelId=@Model.SelectedLevelId&divisionId=@Model.SelectedDivisionId&searchTerm=@Model.SearchTerm&paymentFilter=@Model.PaymentFilter">
+                                @p
+                            </a>
+                        </li>
+                    }
+                    <!-- التالي -->
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link asi-page-link"
+                           href="?page=@(Model.CurrentPage + 1)&levelId=@Model.SelectedLevelId&divisionId=@Model.SelectedDivisionId&searchTerm=@Model.SearchTerm&paymentFilter=@Model.PaymentFilter"
+                           aria-label="الصفحة التالية">
+                            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <style>
+            .asi-page-link{
+                border-radius:10px!important; border:2px solid var(--asi-border)!important;
+                color:var(--asi-text)!important; font-weight:700!important;
+                padding:7px 14px!important;
+                transition:all .2s ease!important;
+                background:#fff!important;
+            }
+            .asi-page-link:hover{ border-color:var(--asi-primary)!important; color:var(--asi-primary)!important; background:#EEF2FF!important; }
+            .page-item.active .asi-page-link{
+                background:var(--asi-grad-primary)!important;
+                color:#fff!important; border-color:transparent!important;
+                box-shadow:0 6px 16px -4px rgba(79,70,229,.5)!important;
+            }
+            .page-item.disabled .asi-page-link{ opacity:.4!important; pointer-events:none!important; }
+        </style>
+    }
+
+    <!-- Modal حذف المفلترين -->
+    <div class="modal fade" id="deleteFilteredModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content asi-modal-content">
+                <div class="modal-header asi-modal-header is-warn">
+                    <h5 class="asi-modal-title">
+                        <i class="fas fa-trash" aria-hidden="true"></i>
+                        حذف الطلاب المفلترين
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="asi-modal-body">
+                    <div class="asi-modal-warn is-warn">
+                        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                        <span>سيتم حذف <strong>@Model.TotalCount طالب</strong> بشكل نهائي ولا يمكن استرجاعهم!</span>
+                    </div>
+
+                    <form asp-area="Admin"
+                          asp-controller="Students"
+                          asp-action="DeleteFiltered"
+                          method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="levelId"       value="@Model.SelectedLevelId" />
+                        <input type="hidden" name="divisionId"    value="@Model.SelectedDivisionId" />
+                        <input type="hidden" name="searchTerm"    value="@Model.SearchTerm" />
+                        <input type="hidden" name="paymentFilter" value="@Model.PaymentFilter" />
+
+                        <p class="fw-bold mb-3" style="color:var(--asi-text)">
+                            أدخل بيانات تسجيل الدخول للتأكيد:
+                        </p>
+
+                        <div class="mb-3">
+                            <label class="asi-modal-label">
+                                <i class="fas fa-user" style="color:var(--asi-warning)" aria-hidden="true"></i>
+                                اسم المستخدم
+                            </label>
+                            <input type="text" name="confirmUsername"
+                                   class="asi-modal-input"
+                                   placeholder="أدخل اسم المستخدم"
+                                   required />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="asi-modal-label">
+                                <i class="fas fa-lock" style="color:var(--asi-warning)" aria-hidden="true"></i>
+                                كلمة المرور
+                            </label>
+                            <input type="password" name="confirmPassword"
+                                   class="asi-modal-input"
+                                   placeholder="أدخل كلمة المرور"
+                                   required />
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="asi-btn asi-btn-warning" style="flex:1">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
+                                تأكيد الحذف
+                            </button>
+                            <button type="button" class="asi-btn-cancel" style="flex:1; padding:.7rem 1.25rem; border-radius:12px; font-weight:800; cursor:pointer; font-family:'Cairo', sans-serif;" data-bs-dismiss="modal">
+                                إلغاء
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal إعادة ضبط DB -->
+    <div class="modal fade" id="resetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content asi-modal-content">
+                <div class="modal-header asi-modal-header is-danger">
+                    <h5 class="asi-modal-title">
+                        <i class="fas fa-skull-crossbones" aria-hidden="true"></i>
+                        إعادة ضبط قاعدة البيانات
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="asi-modal-body">
+                    <div class="asi-modal-warn is-danger">
+                        <i class="fas fa-skull-crossbones" aria-hidden="true"></i>
+                        <span>
+                            <strong>تحذير شديد!</strong><br />
+                            سيتم حذف <strong>جميع بيانات الطلاب</strong> بشكل نهائي ولا يمكن استرجاعها أبداً!
+                        </span>
+                    </div>
+
+                    <form asp-area="Admin"
+                          asp-controller="Students"
+                          asp-action="ResetDatabase"
+                          method="post">
+                        @Html.AntiForgeryToken()
+
+                        <p class="fw-bold mb-3" style="color:var(--asi-text)">
+                            أدخل بيانات تسجيل الدخول للتأكيد:
+                        </p>
+
+                        <div class="mb-3">
+                            <label class="asi-modal-label">
+                                <i class="fas fa-user" style="color:var(--asi-danger)" aria-hidden="true"></i>
+                                اسم المستخدم
+                            </label>
+                            <input type="text" name="confirmUsername"
+                                   class="asi-modal-input"
+                                   placeholder="أدخل اسم المستخدم"
+                                   required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="asi-modal-label">
+                                <i class="fas fa-lock" style="color:var(--asi-danger)" aria-hidden="true"></i>
+                                كلمة المرور
+                            </label>
+                            <input type="password" name="confirmPassword"
+                                   class="asi-modal-input"
+                                   placeholder="أدخل كلمة المرور"
+                                   required />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="asi-modal-label">
+                                <i class="fas fa-keyboard" style="color:var(--asi-danger)" aria-hidden="true"></i>
+                                اكتب <strong style="color:var(--asi-danger)">RESET</strong> للتأكيد
+                            </label>
+                            <input type="text"
+                                   id="asi-reset-text"
+                                   class="asi-modal-input is-reset"
+                                   placeholder="RESET" />
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit"
+                                    id="asi-reset-submit"
+                                    class="asi-btn asi-btn-danger"
+                                    style="flex:1; opacity:.5"
+                                    disabled>
+                                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                                تأكيد إعادة الضبط
+                            </button>
+                            <button type="button" class="asi-btn-cancel" style="flex:1; padding:.7rem 1.25rem; border-radius:12px; font-weight:800; cursor:pointer; font-family:'Cairo', sans-serif;" data-bs-dismiss="modal">
+                                إلغاء
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const TOTAL = @Model.TotalCount;
+
+            // فتح Modal حذف المفلترين
+            const openDelFilteredBtn = document.getElementById('asi-open-delete-filtered');
+            if (openDelFilteredBtn) {
+                openDelFilteredBtn.addEventListener('click', function () {
+                    if (TOTAL === 0) {
+                        Swal.fire({
+                            title: 'لا يوجد طلاب',
+                            text: 'لا يوجد طلاب لحذفهم في النتائج الحالية',
+                            icon: 'info',
+                            confirmButtonColor: '#4F46E5'
+                        });
+                        return;
+                    }
+                    new bootstrap.Modal(document.getElementById('deleteFilteredModal')).show();
+                });
+            }
+
+            // فتح Modal إعادة الضبط
+            const openResetBtn = document.getElementById('asi-open-reset');
+            if (openResetBtn) {
+                openResetBtn.addEventListener('click', function () {
+                    new bootstrap.Modal(document.getElementById('resetModal')).show();
+                });
+            }
+
+            // التحقق من كتابة RESET
+            const resetInput  = document.getElementById('asi-reset-text');
+            const resetSubmit = document.getElementById('asi-reset-submit');
+            if (resetInput && resetSubmit) {
+                resetInput.addEventListener('input', function () {
+                    if (resetInput.value === 'RESET') {
+                        resetSubmit.disabled = false;
+                        resetSubmit.style.opacity = '1';
+                        resetInput.classList.add('is-ok');
+                    } else {
+                        resetSubmit.disabled = true;
+                        resetSubmit.style.opacity = '.5';
+                        resetInput.classList.remove('is-ok');
+                    }
+                });
+            }
+
+            // حذف طالب واحد عبر SweetAlert
+            document.querySelectorAll('.asi-delete-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const id = btn.getAttribute('data-student-id');
+
+                    Swal.fire({
+                        title: 'تأكيد الحذف',
+                        text: 'سيتم حذف الطالب نهائياً!',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#EF4444',
+                        cancelButtonColor:  '#4F46E5',
+                        confirmButtonText:  'نعم، احذف!',
+                        cancelButtonText:   'إلغاء',
+                        reverseButtons: true
+                    }).then(function (r) {
+                        if (r.isConfirmed) {
+                            const form = document.getElementById(`deleteForm_${id}`);
+                            if (form) form.submit();
+                        }
+                    });
+                });
+            });
+        })();
+    </script>
+}
